@@ -106,7 +106,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
         <:loading>
           <button
             :for={_ <- 1..16}
-            class="text-center py-6 rounded-md font-bold text-lg bg-[#efefe6] flex justify-center items-center"
+            class="text-center py-6 rounded-md font-bold text-lg bg-card flex justify-center items-center"
           >
             &nbsp;
           </button>
@@ -118,7 +118,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
           phx-value-card={card}
           class={[
             "text-center py-6 rounded-md font-bold text-lg",
-            if(selected, do: "bg-[#5a594e]", else: "bg-[#efefe6]"),
+            if(selected, do: "bg-card-selected", else: "bg-card"),
             selected && "text-white"
           ]}
         >

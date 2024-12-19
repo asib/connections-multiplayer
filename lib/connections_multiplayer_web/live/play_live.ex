@@ -9,6 +9,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     socket =
       socket
       |> assign(:puzzle_date, puzzle_date)
+      |> assign(:found_categories, [])
       |> assign_async(:cards, fn -> async_load_cards(puzzle_date) end)
 
     {:ok, socket}
@@ -27,6 +28,20 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
             else
               card_info
             end
+          end)
+
+        AsyncResult.ok(cards, new_cards)
+      end)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("deselect_all", _params, socket) do
+    socket =
+      update(socket, :cards, fn cards ->
+        new_cards =
+          Map.new(cards.result, fn {card, card_info} ->
+            {card, %{card_info | selected: false}}
           end)
 
         AsyncResult.ok(cards, new_cards)
@@ -86,23 +101,40 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   def render(assigns) do
     ~H"""
-    <.async_result :let={cards} assign={@cards}>
-      <:loading>Fetching cards...</:loading>
-      <:failed>Failed to fetch cards, retry...</:failed>
-      <div class="grid grid-cols-4 gap-x-3 gap-y-2">
-        <div
+    <div class="grid grid-cols-4 gap-x-3 gap-y-2">
+      <.async_result :let={cards} assign={@cards}>
+        <:loading>
+          <button
+            :for={_ <- 1..16}
+            class="text-center py-6 rounded-md font-bold text-lg bg-[#efefe6] flex justify-center items-center"
+          >
+            &nbsp;
+          </button>
+        </:loading>
+        <:failed>Failed to fetch cards, retry...</:failed>
+        <button
           :for={{card, selected} <- cards_in_order(cards)}
           phx-click="toggle_card"
           phx-value-card={card}
           class={[
-            "text-center py-8 rounded-md",
-            if(selected, do: "bg-gray-400", else: "bg-gray-200")
+            "text-center py-6 rounded-md font-bold text-lg",
+            if(selected, do: "bg-[#5a594e]", else: "bg-[#efefe6]"),
+            selected && "text-white"
           ]}
         >
           {card}
-        </div>
-      </div>
-    </.async_result>
+        </button>
+      </.async_result>
+    </div>
+    <div class="w-full pt-4 flex justify-center space-x-2">
+      <button class="border border-gray-800 rounded-full py-4 px-6 text-center">Submit</button>
+      <button
+        class="border border-gray-800 rounded-full py-4 px-6 text-center"
+        phx-click="deselect_all"
+      >
+        Deselect All
+      </button>
+    </div>
     """
   end
 end

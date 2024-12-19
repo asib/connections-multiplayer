@@ -125,7 +125,27 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def render(assigns) do
+    assigns =
+      assign(assigns,
+        month:
+          case assigns.puzzle_date.month do
+            1 -> "January"
+            2 -> "February"
+            3 -> "March"
+            4 -> "April"
+            5 -> "May"
+            6 -> "June"
+            7 -> "July"
+            8 -> "August"
+            9 -> "September"
+            10 -> "October"
+            11 -> "November"
+            12 -> "December"
+          end
+      )
+
     ~H"""
+    <p class="font-light font-serif pb-4">{@month} {@puzzle_date.day}, {@puzzle_date.year}</p>
     <div class="grid grid-cols-4 gap-x-3 gap-y-2">
       <.async_result :let={cards} assign={@cards}>
         <:loading>

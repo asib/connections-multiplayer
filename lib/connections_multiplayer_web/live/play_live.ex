@@ -17,7 +17,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     socket =
       socket
       |> assign(:puzzle_date, puzzle_date)
-      |> assign(:found_categories, [])
+      |> assign(:found_categories, %{})
       |> assign_async(:cards, fn -> async_load_cards(puzzle_date) end)
 
     {:ok, socket}
@@ -38,9 +38,15 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   @impl true
+  def handle_event("submit", _params, socket) do
+    Game.submit(@game_id)
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info({:toggle_card, card}, socket) do
-    num_already_selected =
-      socket.assigns.cards.result |> Map.values() |> Enum.count(& &1.selected)
+    num_already_selected = num_cards_selected(socket.assigns.cards.result)
 
     socket =
       update(socket, :cards, fn cards ->
@@ -70,6 +76,51 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
         AsyncResult.ok(cards, new_cards)
       end)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(:submit, socket) do
+    selected_cards =
+      socket.assigns.cards.result |> Map.filter(fn {_card, %{selected: selected}} -> selected end)
+
+    remaining_cards =
+      socket.assigns.cards.result |> Map.reject(fn {_card, %{selected: selected}} -> selected end)
+
+    selected_categories =
+      Enum.map(selected_cards, fn {_, %{category: category}} -> category end)
+      |> Enum.frequencies()
+
+    {socket, new_cards, new_found_categories} =
+      if map_size(selected_categories) == 1 do
+        new_found_categories =
+          Map.put(
+            socket.assigns.found_categories,
+            selected_categories |> Map.keys() |> hd(),
+            Enum.map(selected_cards, fn {card, _} -> card end)
+          )
+
+        {put_flash(socket, :success, "Woohoo"), remaining_cards, new_found_categories}
+      else
+        Game.deselect_all(@game_id)
+
+        message =
+          if map_size(selected_categories) == 2 &&
+               selected_categories |> Map.values() |> Enum.any?(&(&1 == 1)) do
+            "So close, just one off!"
+          else
+            "Bad luck, have another go."
+          end
+
+        {put_flash(socket, :error, message), socket.assigns.cards.result,
+         socket.assigns.found_categories}
+      end
+
+    socket =
+      socket
+      |> update(:cards, fn cards -> AsyncResult.ok(cards, new_cards) end)
+      |> assign(:found_categories, new_found_categories)
 
     {:noreply, socket}
   end
@@ -123,6 +174,12 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     |> Enum.map(fn {content, %{selected: selected}} -> {content, selected} end)
   end
 
+  def num_cards_selected(cards) do
+    cards
+    |> Map.values()
+    |> Enum.count(& &1.selected)
+  end
+
   @impl true
   def render(assigns) do
     assigns =
@@ -141,7 +198,8 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
             10 -> "October"
             11 -> "November"
             12 -> "December"
-          end
+          end,
+        submittable: assigns.cards.ok? && num_cards_selected(assigns.cards.result) == 4
       )
 
     ~H"""
@@ -172,7 +230,16 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       </.async_result>
     </div>
     <div class="w-full pt-4 flex justify-center space-x-2">
-      <button class="border border-gray-800 rounded-full py-4 px-6 text-center">Submit</button>
+      <button
+        class={[
+          "border border-gray-800 rounded-full py-4 px-6 text-center",
+          !@submittable && "!border-gray-300 text-gray-300"
+        ]}
+        disabled={!@submittable}
+        phx-click="submit"
+      >
+        Submit
+      </button>
       <button
         class="border border-gray-800 rounded-full py-4 px-6 text-center"
         phx-click="deselect_all"

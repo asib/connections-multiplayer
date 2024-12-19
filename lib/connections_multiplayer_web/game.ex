@@ -12,4 +12,8 @@ defmodule ConnectionsMultiplayerWeb.Game do
   def deselect_all(game_id) do
     PubSub.broadcast(ConnectionsMultiplayer.PubSub, "game:#{game_id}", :deselect_all)
   end
+
+  def submit(game_id) do
+    PubSub.broadcast(ConnectionsMultiplayer.PubSub, "game:#{game_id}", :submit)
+  end
 end

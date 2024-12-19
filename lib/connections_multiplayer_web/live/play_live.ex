@@ -1,10 +1,18 @@
 defmodule ConnectionsMultiplayerWeb.PlayLive do
+  alias ConnectionsMultiplayerWeb.Game
   use ConnectionsMultiplayerWeb, :live_view
 
   alias Phoenix.LiveView.AsyncResult
 
+  @game_id "hardcoded-game-id"
+
+  @impl true
   def mount(_params, _session, socket) do
     puzzle_date = Date.utc_today()
+
+    if connected?(socket) do
+      Game.subscribe(@game_id)
+    end
 
     socket =
       socket
@@ -15,7 +23,22 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     {:ok, socket}
   end
 
+  @impl true
   def handle_event("toggle_card", %{"card" => card}, socket) do
+    Game.toggle_card(@game_id, card)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("deselect_all", _params, socket) do
+    Game.deselect_all(@game_id)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:toggle_card, card}, socket) do
     num_already_selected =
       socket.assigns.cards.result |> Map.values() |> Enum.count(& &1.selected)
 
@@ -36,7 +59,8 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     {:noreply, socket}
   end
 
-  def handle_event("deselect_all", _params, socket) do
+  @impl true
+  def handle_info(:deselect_all, socket) do
     socket =
       update(socket, :cards, fn cards ->
         new_cards =
@@ -99,6 +123,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     |> Enum.map(fn {content, %{selected: selected}} -> {content, selected} end)
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="grid grid-cols-4 gap-x-3 gap-y-2">

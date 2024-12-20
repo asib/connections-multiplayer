@@ -25,7 +25,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def handle_event("toggle_card", %{"card" => card}, socket) do
-    Game.toggle_card(@game_id, card)
+    Game.toggle_card(@game_id, card, !socket.assigns.cards.result[card].selected)
 
     {:noreply, socket}
   end
@@ -45,15 +45,15 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   @impl true
-  def handle_info({:toggle_card, card}, socket) do
+  def handle_info({:toggle_card, card, is_selected}, socket) do
     num_already_selected = num_cards_selected(socket.assigns.cards.result)
 
     socket =
       update(socket, :cards, fn cards ->
         new_cards =
-          Map.update!(cards.result, card, fn %{selected: selected} = card_info ->
-            if num_already_selected < 4 || selected do
-              %{card_info | selected: !selected}
+          Map.update!(cards.result, card, fn card_info ->
+            if num_already_selected < 4 || !is_selected do
+              %{card_info | selected: is_selected}
             else
               card_info
             end

@@ -104,11 +104,11 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     {socket, new_cards, new_found_categories} =
       if map_size(selected_categories) == 1 do
         new_found_categories =
-          Map.put(
-            socket.assigns.found_categories,
-            selected_categories |> Map.keys() |> hd(),
-            Enum.map(selected_cards, fn {card, _} -> card end)
-          )
+          [
+            {selected_categories |> Map.keys() |> hd(),
+             Enum.map(selected_cards, fn {card, _} -> card end)}
+            | socket.assigns.found_categories
+          ]
 
         {put_flash(socket, :success, "Woohoo"), remaining_cards, new_found_categories}
       else
@@ -138,8 +138,8 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     socket
     |> assign(:puzzle_date, puzzle_date)
     |> assign(:puzzle_date_form, to_form(%{"date" => puzzle_date}))
-    |> assign(:found_categories, %{})
-    |> assign_async(:cards, fn -> async_load_cards(puzzle_date) end)
+    |> assign(:found_categories, [])
+    |> assign_async([:cards, :category_difficulties], fn -> async_load_cards(puzzle_date) end)
   end
 
   defp async_load_cards(%Date{year: year, month: month, day: day}) do
@@ -169,17 +169,26 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     with {:query_puzzle_data, {:ok, %Req.Response{status: 200, body: puzzle}}} <-
            {:query_puzzle_data,
             Req.get("https://www.nytimes.com/svc/connections/v2/#{year}-#{month}-#{day}.json")} do
+      cards =
+        puzzle["categories"]
+        |> Enum.flat_map(fn category ->
+          Enum.map(category["cards"], fn card ->
+            {card["content"],
+             %{category: category["title"], position: card["position"], selected: false}}
+          end)
+        end)
+        |> Map.new()
+
+      difficulties =
+        puzzle["categories"]
+        |> Enum.map(& &1["title"])
+        |> Enum.with_index()
+        |> Map.new()
+
       {:ok,
        %{
-         cards:
-           puzzle["categories"]
-           |> Enum.flat_map(fn category ->
-             Enum.map(category["cards"], fn card ->
-               {card["content"],
-                %{category: category["title"], position: card["position"], selected: false}}
-             end)
-           end)
-           |> Map.new()
+         cards: cards,
+         category_difficulties: difficulties
        }}
     end
   end
@@ -195,6 +204,15 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     cards
     |> Map.values()
     |> Enum.count(& &1.selected)
+  end
+
+  defp category_colour(difficulty) do
+    case difficulty do
+      0 -> "bg-[#f9df6d]"
+      1 -> "bg-[#a0c35a]"
+      2 -> "bg-[#b0c4ef]"
+      3 -> "bg-[#ba81c5]"
+    end
   end
 
   defp human_month(%Date{month: month}) do

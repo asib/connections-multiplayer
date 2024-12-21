@@ -167,86 +167,37 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     end
   end
 
-  def cards_in_order(cards) do
+  defp cards_in_order(cards) do
     cards
     |> Map.to_list()
     |> Enum.sort_by(fn {_, %{position: position}} -> position end)
     |> Enum.map(fn {content, %{selected: selected}} -> {content, selected} end)
   end
 
-  def num_cards_selected(cards) do
+  defp num_cards_selected(cards) do
     cards
     |> Map.values()
     |> Enum.count(& &1.selected)
   end
 
-  @impl true
-  def render(assigns) do
-    assigns =
-      assign(assigns,
-        month:
-          case assigns.puzzle_date.month do
-            1 -> "January"
-            2 -> "February"
-            3 -> "March"
-            4 -> "April"
-            5 -> "May"
-            6 -> "June"
-            7 -> "July"
-            8 -> "August"
-            9 -> "September"
-            10 -> "October"
-            11 -> "November"
-            12 -> "December"
-          end,
-        submittable: assigns.cards.ok? && num_cards_selected(assigns.cards.result) == 4
-      )
+  defp human_month(%Date{month: month}) do
+    case month do
+      1 -> "January"
+      2 -> "February"
+      3 -> "March"
+      4 -> "April"
+      5 -> "May"
+      6 -> "June"
+      7 -> "July"
+      8 -> "August"
+      9 -> "September"
+      10 -> "October"
+      11 -> "November"
+      12 -> "December"
+    end
+  end
 
-    ~H"""
-    <p class="font-light font-serif pb-4">{@month} {@puzzle_date.day}, {@puzzle_date.year}</p>
-    <div class="grid grid-cols-4 gap-x-3 gap-y-2">
-      <.async_result :let={cards} assign={@cards}>
-        <:loading>
-          <button
-            :for={_ <- 1..16}
-            class="text-center py-6 rounded-md font-bold text-lg bg-card flex justify-center items-center"
-          >
-            &nbsp;
-          </button>
-        </:loading>
-        <:failed>Failed to fetch cards, retry...</:failed>
-        <button
-          :for={{card, selected} <- cards_in_order(cards)}
-          phx-click="toggle_card"
-          phx-value-card={card}
-          class={[
-            "text-center py-6 rounded-md font-bold text-lg",
-            if(selected, do: "bg-card-selected", else: "bg-card"),
-            selected && "text-white"
-          ]}
-        >
-          {card}
-        </button>
-      </.async_result>
-    </div>
-    <div class="w-full pt-4 flex justify-center space-x-2">
-      <button
-        class={[
-          "border border-gray-800 rounded-full py-4 px-6 text-center",
-          !@submittable && "!border-gray-300 text-gray-300"
-        ]}
-        disabled={!@submittable}
-        phx-click="submit"
-      >
-        Submit
-      </button>
-      <button
-        class="border border-gray-800 rounded-full py-4 px-6 text-center"
-        phx-click="deselect_all"
-      >
-        Deselect All
-      </button>
-    </div>
-    """
+  defp submittable(cards) do
+    cards.ok? && num_cards_selected(cards.result) == 4
   end
 end

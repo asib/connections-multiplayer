@@ -1,0 +1,26 @@
+<p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p>
+<div class="grid grid-cols-4 gap-x-3 gap-y-2">
+    <.async_result :let={cards} assign={@cards}>
+        <:loading>
+            <button :for={_ <- 1..16}
+                class="text-center py-6 rounded-md font-bold text-lg bg-card flex justify-center items-center">
+                &nbsp;
+            </button>
+        </:loading>
+        <:failed>Failed to fetch cards, retry...</:failed>
+        <button :for={{card, selected} <- cards_in_order(cards)} phx-click="toggle_card" phx-value-card={card}
+            class={[ "text-center py-6 rounded-md font-bold text-lg" , if(selected, do: "bg-card-selected" ,
+            else: "bg-card" ), selected && "text-white" ]}>
+            {card}
+        </button>
+    </.async_result>
+</div>
+<div class="w-full pt-4 flex justify-center space-x-2">
+    <button class={[ "border border-gray-800 rounded-full py-4 px-6 text-center" , !submittable(@cards)
+        && "!border-gray-300 text-gray-300" ]} disabled={!submittable(@cards)} phx-click="submit">
+        Submit
+    </button>
+    <button class="border border-gray-800 rounded-full py-4 px-6 text-center" phx-click="deselect_all">
+        Deselect All
+    </button>
+</div>

@@ -1,4 +1,7 @@
-<p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p>
+<.simple_form for={@puzzle_date_form} class="font-light font-serif pb-4" phx-change="change_puzzle_date">
+    <.input type="date" field={@puzzle_date_form[:date]} value={@puzzle_date} />
+</.simple_form>
+<!-- <p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p> -->
 <div class="grid grid-cols-4 gap-x-3 gap-y-2">
     <.async_result :let={cards} assign={@cards}>
         <:loading>

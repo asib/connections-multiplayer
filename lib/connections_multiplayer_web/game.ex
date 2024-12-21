@@ -17,6 +17,14 @@ defmodule ConnectionsMultiplayerWeb.Game do
     PubSub.broadcast(ConnectionsMultiplayer.PubSub, "game:#{game_id}", :deselect_all)
   end
 
+  def change_puzzle_date(game_id, new_date) do
+    PubSub.broadcast(
+      ConnectionsMultiplayer.PubSub,
+      "game:#{game_id}",
+      {:change_puzzle_date, new_date}
+    )
+  end
+
   def submit(game_id) do
     PubSub.broadcast(ConnectionsMultiplayer.PubSub, "game:#{game_id}", :submit)
   end

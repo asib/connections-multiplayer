@@ -14,11 +14,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       Game.subscribe(@game_id)
     end
 
-    socket =
-      socket
-      |> assign(:puzzle_date, puzzle_date)
-      |> assign(:found_categories, %{})
-      |> assign_async(:cards, fn -> async_load_cards(puzzle_date) end)
+    socket = load_new_game(socket, puzzle_date)
 
     {:ok, socket}
   end
@@ -33,6 +29,13 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   @impl true
   def handle_event("deselect_all", _params, socket) do
     Game.deselect_all(@game_id)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("change_puzzle_date", %{"date" => new_date}, socket) do
+    Game.change_puzzle_date(@game_id, Date.from_iso8601!(new_date))
 
     {:noreply, socket}
   end
@@ -80,6 +83,12 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     {:noreply, socket}
   end
 
+  def handle_info({:change_puzzle_date, new_date}, socket) do
+    socket = load_new_game(socket, new_date)
+
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_info(:submit, socket) do
     selected_cards =
@@ -123,6 +132,14 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> assign(:found_categories, new_found_categories)
 
     {:noreply, socket}
+  end
+
+  defp load_new_game(socket, puzzle_date) do
+    socket
+    |> assign(:puzzle_date, puzzle_date)
+    |> assign(:puzzle_date_form, to_form(%{"date" => puzzle_date}))
+    |> assign(:found_categories, %{})
+    |> assign_async(:cards, fn -> async_load_cards(puzzle_date) end)
   end
 
   defp async_load_cards(%Date{year: year, month: month, day: day}) do

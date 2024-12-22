@@ -1,196 +1,168 @@
 defmodule ConnectionsMultiplayerWeb.PlayLive do
-  alias ConnectionsMultiplayerWeb.Game
   use ConnectionsMultiplayerWeb, :live_view
 
+  alias ConnectionsMultiplayerWeb.Game
+  alias ConnectionsMultiplayerWeb.GameRegistry
   alias Phoenix.LiveView.AsyncResult
 
   @game_id "hardcoded-game-id"
 
   @impl true
   def mount(_params, _session, socket) do
-    puzzle_date = Date.utc_today()
-
     if connected?(socket) do
-      Game.subscribe(@game_id)
+      GameRegistry.subscribe(@game_id)
     end
 
-    socket = load_new_game(socket, puzzle_date)
+    socket =
+      assign_async(
+        socket,
+        [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
+        fn -> load_game(@game_id) end
+      )
 
     {:ok, socket}
   end
 
   @impl true
   def handle_event("toggle_card", %{"card" => card}, socket) do
-    Game.toggle_card(@game_id, card, !socket.assigns.cards.result[card].selected)
+    :ok = GameRegistry.toggle_card(@game_id, card)
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("deselect_all", _params, socket) do
-    Game.deselect_all(@game_id)
+    :ok = GameRegistry.deselect_all_cards(@game_id)
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("change_puzzle_date", %{"date" => new_date}, socket) do
-    Game.change_puzzle_date(@game_id, Date.from_iso8601!(new_date))
+    socket =
+      socket
+      |> update(:puzzle_date, fn puzzle_date ->
+        AsyncResult.loading(puzzle_date)
+      end)
+      |> update(:puzzle_date_form, fn puzzle_date_form ->
+        AsyncResult.loading(puzzle_date_form)
+      end)
+      |> update(:found_categories, fn found_categories ->
+        AsyncResult.loading(found_categories)
+      end)
+      |> update(:cards, fn cards -> AsyncResult.loading(cards) end)
+      |> update(:category_difficulties, fn category_difficulties ->
+        AsyncResult.loading(category_difficulties)
+      end)
+      |> start_async(:change_puzzle_date_task, fn ->
+        GameRegistry.change_puzzle_date(@game_id, Date.from_iso8601!(new_date))
+      end)
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("submit", _params, socket) do
-    Game.submit(@game_id)
+    :ok = GameRegistry.submit(@game_id)
 
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info({:toggle_card, card, is_selected}, socket) do
-    num_already_selected = num_cards_selected(socket.assigns.cards.result)
-
+  def handle_info({:state_update, new_state}, socket) do
     socket =
-      update(socket, :cards, fn cards ->
-        new_cards =
-          Map.update!(cards.result, card, fn card_info ->
-            if num_already_selected < 4 || !is_selected do
-              %{card_info | selected: is_selected}
-            else
-              card_info
-            end
-          end)
-
-        AsyncResult.ok(cards, new_cards)
-      end)
+      new_state
+      |> game_state_to_map()
+      |> then(&assign_game_state(socket, &1))
 
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info(:deselect_all, socket) do
+  def handle_info({:state_update, new_state, {flash_kind, message}}, socket) do
     socket =
-      update(socket, :cards, fn cards ->
-        new_cards =
-          Map.new(cards.result, fn {card, card_info} ->
-            {card, %{card_info | selected: false}}
-          end)
-
-        AsyncResult.ok(cards, new_cards)
-      end)
-
-    {:noreply, socket}
-  end
-
-  def handle_info({:change_puzzle_date, new_date}, socket) do
-    socket = load_new_game(socket, new_date)
+      new_state
+      |> game_state_to_map()
+      |> then(&assign_game_state(socket, &1))
+      |> put_flash(flash_kind, message)
 
     {:noreply, socket}
   end
 
   @impl true
-  def handle_info(:submit, socket) do
-    selected_cards =
-      socket.assigns.cards.result |> Map.filter(fn {_card, %{selected: selected}} -> selected end)
-
-    remaining_cards =
-      socket.assigns.cards.result |> Map.reject(fn {_card, %{selected: selected}} -> selected end)
-
-    selected_categories =
-      Enum.map(selected_cards, fn {_, %{category: category}} -> category end)
-      |> Enum.frequencies()
-
-    {socket, new_cards, new_found_categories} =
-      if map_size(selected_categories) == 1 do
-        new_found_categories =
-          [
-            {selected_categories |> Map.keys() |> hd(),
-             Enum.map(selected_cards, fn {card, _} -> card end)}
-            | socket.assigns.found_categories
-          ]
-
-        {put_flash(socket, :success, "Woohoo"), remaining_cards, new_found_categories}
-      else
-        Game.deselect_all(@game_id)
-
-        message =
-          if map_size(selected_categories) == 2 &&
-               selected_categories |> Map.values() |> Enum.any?(&(&1 == 1)) do
-            "So close, just one off!"
-          else
-            "Bad luck, have another go."
-          end
-
-        {put_flash(socket, :error, message), socket.assigns.cards.result,
-         socket.assigns.found_categories}
+  def handle_async(:change_puzzle_date_task, {:ok, result}, socket) do
+    socket =
+      case result do
+        :ok -> socket
+        reason -> set_async_results_to_failed(socket, reason)
       end
 
-    socket =
-      socket
-      |> update(:cards, fn cards -> AsyncResult.ok(cards, new_cards) end)
-      |> assign(:found_categories, new_found_categories)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_async(:change_puzzle_date_task, {:exit, _} = reason, socket) do
+    socket = set_async_results_to_failed(socket, reason)
 
     {:noreply, socket}
   end
 
-  defp load_new_game(socket, puzzle_date) do
+  defp set_async_results_to_failed(socket, reason) do
     socket
-    |> assign(:puzzle_date, puzzle_date)
-    |> assign(:puzzle_date_form, to_form(%{"date" => puzzle_date}))
-    |> assign(:found_categories, [])
-    |> assign_async([:cards, :category_difficulties], fn -> async_load_cards(puzzle_date) end)
+    |> update(:puzzle_date, fn puzzle_date -> AsyncResult.failed(puzzle_date, reason) end)
+    |> update(:puzzle_date_form, fn puzzle_date_form ->
+      AsyncResult.failed(puzzle_date_form, reason)
+    end)
+    |> update(:found_categories, fn found_categories ->
+      AsyncResult.failed(found_categories, reason)
+    end)
+    |> update(:cards, fn cards -> AsyncResult.failed(cards, reason) end)
+    |> update(:category_difficulties, fn category_difficulties ->
+      AsyncResult.failed(category_difficulties, reason)
+    end)
+    |> put_flash(:error, "Failed to change puzzle date")
   end
 
-  defp async_load_cards(%Date{year: year, month: month, day: day}) do
-    month = String.pad_leading("#{month}", 2, "0")
-    day = String.pad_leading("#{day}", 2, "0")
-
-    # {
-    #   "status": "OK",
-    #   "id": 190,
-    #   "print_date": "2023-12-18",
-    #   "editor": "Wyna Liu",
-    #   "categories": [
-    #     {
-    #       "title": "BRIEF MOMENT",
-    #       "cards": [
-    #         {
-    #           "content": "FLASH",
-    #           "position": 10
-    #         },
-    #         ...
-    #       ]
-    #     },
-    #     ...
-    #   ]
-    # }
-
-    with {:query_puzzle_data, {:ok, %Req.Response{status: 200, body: puzzle}}} <-
-           {:query_puzzle_data,
-            Req.get("https://www.nytimes.com/svc/connections/v2/#{year}-#{month}-#{day}.json")} do
-      cards =
-        puzzle["categories"]
-        |> Enum.flat_map(fn category ->
-          Enum.map(category["cards"], fn card ->
-            {card["content"],
-             %{category: category["title"], position: card["position"], selected: false}}
-          end)
-        end)
-        |> Map.new()
-
-      difficulties =
-        puzzle["categories"]
-        |> Enum.map(& &1["title"])
-        |> Enum.with_index()
-        |> Map.new()
-
-      {:ok,
-       %{
-         cards: cards,
-         category_difficulties: difficulties
-       }}
+  defp load_game(game_id) do
+    with {:ok, game_state} <- GameRegistry.load(game_id) do
+      {:ok, game_state_to_map(game_state)}
     end
+  end
+
+  def game_state_to_map(%Game{
+        puzzle_date: puzzle_date,
+        found_categories: found_categories,
+        cards: cards,
+        category_difficulties: category_difficulties
+      }) do
+    %{
+      puzzle_date: puzzle_date,
+      puzzle_date_form: to_form(%{"date" => puzzle_date}),
+      found_categories: found_categories,
+      cards: cards,
+      category_difficulties: category_difficulties
+    }
+  end
+
+  def assign_game_state(socket, %{
+        puzzle_date: new_puzzle_date,
+        puzzle_date_form: new_puzzle_date_form,
+        found_categories: new_found_categories,
+        cards: new_cards,
+        category_difficulties: new_category_difficulties
+      }) do
+    socket
+    |> update(:puzzle_date, fn puzzle_date -> AsyncResult.ok(puzzle_date, new_puzzle_date) end)
+    |> update(:puzzle_date_form, fn puzzle_date_form ->
+      AsyncResult.ok(puzzle_date_form, new_puzzle_date_form)
+    end)
+    |> update(:found_categories, fn found_categories ->
+      AsyncResult.ok(found_categories, new_found_categories)
+    end)
+    |> update(:cards, fn cards -> AsyncResult.ok(cards, new_cards) end)
+    |> update(:category_difficulties, fn category_difficulties ->
+      AsyncResult.ok(category_difficulties, new_category_difficulties)
+    end)
   end
 
   defp cards_in_order(cards) do
@@ -198,12 +170,6 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     |> Map.to_list()
     |> Enum.sort_by(fn {_, %{position: position}} -> position end)
     |> Enum.map(fn {content, %{selected: selected}} -> {content, selected} end)
-  end
-
-  defp num_cards_selected(cards) do
-    cards
-    |> Map.values()
-    |> Enum.count(& &1.selected)
   end
 
   defp category_colour(difficulty) do
@@ -233,6 +199,6 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   defp submittable(cards) do
-    cards.ok? && num_cards_selected(cards.result) == 4
+    cards.ok? && Game.num_cards_selected(cards.result) == 4
   end
 end

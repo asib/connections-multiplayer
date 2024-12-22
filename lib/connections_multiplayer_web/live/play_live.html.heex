@@ -1,14 +1,20 @@
-<.simple_form for={@puzzle_date_form} class="font-light font-serif pb-4" phx-change="change_puzzle_date">
-    <.input type="date" field={@puzzle_date_form[:date]} value={@puzzle_date} />
-</.simple_form>
+<.async_result :let={puzzle_date} assign={@puzzle_date}>
+    <.async_result :let={puzzle_date_form} assign={@puzzle_date_form}>
+        <.simple_form for={puzzle_date_form} class="font-light font-serif pb-4" phx-change="change_puzzle_date">
+            <.input type="date" field={puzzle_date_form[:date]} value={puzzle_date} />
+        </.simple_form>
+    </.async_result>
+</.async_result>
 <!-- <p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p> -->
 <div class="grid grid-cols-4 gap-x-3 gap-y-2">
     <.async_result :let={category_difficulties} assign={@category_difficulties}>
-        <div :for={{category, cards} <- Enum.reverse(@found_categories)} class={["text-center col-span-4 py-4
-            rounded-md", category_colour(category_difficulties[category]) ]}>
-            <h3 class="text-lg font-bold">{category}</h3>
-            <p>{Enum.join(cards, ", ")}</p>
-        </div>
+        <.async_result :let={found_categories} assign={@found_categories}>
+            <div :for={{category, cards} <- Enum.reverse(found_categories)} class={["text-center col-span-4 py-4
+                rounded-md", category_colour(category_difficulties[category]) ]}>
+                <h3 class="text-lg font-bold">{category}</h3>
+                <p>{Enum.join(cards, ", ")}</p>
+            </div>
+        </.async_result>
     </.async_result>
     <.async_result :let={cards} assign={@cards}>
         <:loading>

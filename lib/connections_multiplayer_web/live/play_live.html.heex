@@ -1,8 +1,14 @@
+<ul id="online_users" phx-update="stream" class="flex space-x-2">
+    <li :for={{dom_id, %{id: id}} <- @streams.presences} id={dom_id} class="w-[4rem] p-2 bg-slate-600 rounded-full">
+        <img src={"/images/avatars/#{avatar_name(id)}.png"} />
+    </li>
+</ul>
+
 <.async_result :let={puzzle_date} assign={@puzzle_date}>
     <.async_result :let={puzzle_date_form} assign={@puzzle_date_form}>
-        <.simple_form for={puzzle_date_form} class="font-light font-serif pb-4" phx-change="change_puzzle_date">
+        <.form for={puzzle_date_form} class="font-light font-serif py-4" phx-change="change_puzzle_date">
             <.input type="date" field={puzzle_date_form[:date]} value={puzzle_date} />
-        </.simple_form>
+        </.form>
     </.async_result>
 </.async_result>
 <!-- <p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p> -->

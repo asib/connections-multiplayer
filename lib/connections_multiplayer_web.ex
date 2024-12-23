@@ -17,7 +17,7 @@ defmodule ConnectionsMultiplayerWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts images avatars favicon.ico robots.txt)
 
   def router do
     quote do

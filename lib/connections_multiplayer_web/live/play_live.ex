@@ -1,4 +1,5 @@
 defmodule ConnectionsMultiplayerWeb.PlayLive do
+  alias ConnectionsMultiplayerWeb.Presence
   use ConnectionsMultiplayerWeb, :live_view
 
   alias ConnectionsMultiplayerWeb.Game
@@ -7,11 +8,103 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @game_id "hardcoded-game-id"
 
+  @avatars [
+    "Duck",
+    "Rabbit",
+    "Ifrit",
+    "Ibex",
+    "Turtle",
+    "Leopard",
+    "Gopher",
+    "Ferret",
+    "Beaver",
+    "Chinchilla",
+    "Auroch",
+    "Dingo",
+    "Kraken",
+    "Rhino",
+    "Python",
+    "Cormorant",
+    "Platypus",
+    "Elephant",
+    "Jackal",
+    "Dolphin",
+    "Capybara",
+    "Camel",
+    "Chupacabra",
+    "Tiger",
+    "Kangaroo",
+    "Armadillo",
+    "Sheep",
+    "Panda",
+    "Hippo",
+    "Cheetah",
+    "Manatee",
+    "Raccoon",
+    "Wombat",
+    "Dinosaur",
+    "Hyena",
+    "Crow",
+    "Orangutan",
+    "Wolf",
+    "Chameleon",
+    "Shrew",
+    "Penguin",
+    "Nyan Cat",
+    "Liger",
+    "Quagga",
+    "Squirrel",
+    "Wolverine",
+    "Axolotl",
+    "Anteater",
+    "Frog",
+    "Narwhal",
+    "Mink",
+    "Chipmunk",
+    "Buffalo",
+    "Monkey",
+    "Bat",
+    "Giraffe",
+    "Iguana",
+    "Fox",
+    "Coyote",
+    "Moose",
+    "Otter",
+    "Grizzly",
+    "Koala",
+    "Alligator",
+    "Pumpkin",
+    "Llama",
+    "Badger",
+    "Walrus",
+    "Skunk",
+    "Lemur",
+    "Hedgehog"
+  ]
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
       GameRegistry.subscribe(@game_id)
     end
+
+    socket = stream(socket, :presences, [])
+
+    socket =
+      if connected?(socket) do
+        socket =
+          if !is_nil(socket.assigns[:avatar]) do
+            socket.assigns.avatar
+          else
+            assign(socket, :avatar, "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}")
+          end
+
+        Presence.track_user(socket.assigns.avatar, %{id: socket.assigns.avatar})
+        Presence.subscribe()
+        stream(socket, :presences, Presence.list_online_users())
+      else
+        socket
+      end
 
     socket =
       assign_async(
@@ -87,6 +180,20 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> put_flash(flash_kind, message)
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({ConnectionsMultiplayerWeb.Presence, {:join, presence}}, socket) do
+    {:noreply, stream_insert(socket, :presences, presence)}
+  end
+
+  @impl true
+  def handle_info({ConnectionsMultiplayerWeb.Presence, {:leave, presence}}, socket) do
+    if presence.metas == [] do
+      {:noreply, stream_delete(socket, :presences, presence)}
+    else
+      {:noreply, stream_insert(socket, :presences, presence)}
+    end
   end
 
   @impl true
@@ -200,5 +307,10 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   defp submittable(cards) do
     cards.ok? && Game.num_cards_selected(cards.result) == 4
+  end
+
+  defp avatar_name(id) do
+    [name, _] = String.split(id, "-")
+    name
   end
 end

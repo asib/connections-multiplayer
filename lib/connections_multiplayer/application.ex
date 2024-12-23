@@ -10,13 +10,14 @@ defmodule ConnectionsMultiplayer.Application do
     children = [
       ConnectionsMultiplayerWeb.Telemetry,
       ConnectionsMultiplayer.Repo,
-      ConnectionsMultiplayerWeb.GameRegistry,
       {Ecto.Migrator,
        repos: Application.fetch_env!(:connections_multiplayer, :ecto_repos),
        skip: skip_migrations?()},
       {DNSCluster,
        query: Application.get_env(:connections_multiplayer, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ConnectionsMultiplayer.PubSub},
+      ConnectionsMultiplayerWeb.GameRegistry,
+      ConnectionsMultiplayerWeb.Presence,
       # Start a worker by calling: ConnectionsMultiplayer.Worker.start_link(arg)
       # {ConnectionsMultiplayer.Worker, arg},
       # Start to serve requests, typically the last entry

@@ -6,7 +6,7 @@
     </.async_result>
 </.async_result>
 <!-- <p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p> -->
-<div class="grid grid-cols-4 gap-x-3 gap-y-2">
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2">
     <.async_result :let={category_difficulties} assign={@category_difficulties}>
         <.async_result :let={found_categories} assign={@found_categories}>
             <div :for={{category, cards} <- Enum.reverse(found_categories)} class={["text-center col-span-4 py-4
@@ -25,8 +25,8 @@
         </:loading>
         <:failed>Failed to fetch cards, retry...</:failed>
         <button :for={{card, selected} <- cards_in_order(cards)} phx-click="toggle_card" phx-value-card={card}
-            class={[ "text-center py-6 rounded-md font-bold text-lg" , if(selected, do: "bg-card-selected" ,
-            else: "bg-card" ), selected && "text-white" ]}>
+            class={[ "text-center py-6 rounded-md font-bold" , if(selected, do: "bg-card-selected" , else: "bg-card" ),
+            selected && "text-white" ]}>
             {card}
         </button>
     </.async_result>

@@ -1,6 +1,7 @@
 <ul id="online_users" phx-update="stream" class="flex space-x-2">
-    <li :for={{dom_id, %{id: id}} <- @streams.presences} id={dom_id} class="w-[4rem] p-2 bg-slate-600 rounded-full">
-        <img src={"/images/avatars/#{avatar_name(id)}.png"} />
+    <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id} class={["w-[4rem] rounded-full",
+        meta.colour]} aria-label={"Anonymous #{avatar_name(id)}"}>
+        <img src={"/images/avatars/#{avatar_name(id)}.png"} alt={"Anonymous #{avatar_name(id)}"} class="p-4 w-full" />
     </li>
 </ul>
 

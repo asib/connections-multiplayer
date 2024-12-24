@@ -82,6 +82,25 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     "Hedgehog"
   ]
 
+  @colours ~w(
+    bg-slate-600
+    bg-red-900
+    bg-orange-700
+    bg-amber-600
+    bg-lime-600
+    bg-green-800
+    bg-teal-600
+    bg-cyan-600
+    bg-sky-700
+    bg-blue-600
+    bg-indigo-600
+    bg-violet-700
+    bg-purple-600
+    bg-fuchsia-700
+    bg-pink-500
+    bg-rose-700
+  )
+
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -94,12 +113,17 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       if connected?(socket) do
         socket =
           if !is_nil(socket.assigns[:avatar]) do
-            socket.assigns.avatar
+            socket
           else
-            assign(socket, :avatar, "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}")
+            socket
+            |> assign(:avatar, "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}")
           end
 
-        Presence.track_user(socket.assigns.avatar, %{id: socket.assigns.avatar})
+        Presence.track_user(socket.assigns.avatar, %{
+          id: socket.assigns.avatar,
+          colour: Enum.random(@colours)
+        })
+
         Presence.subscribe()
         stream(socket, :presences, Presence.list_online_users())
       else
@@ -285,23 +309,6 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       1 -> "bg-[#a0c35a]"
       2 -> "bg-[#b0c4ef]"
       3 -> "bg-[#ba81c5]"
-    end
-  end
-
-  defp human_month(%Date{month: month}) do
-    case month do
-      1 -> "January"
-      2 -> "February"
-      3 -> "March"
-      4 -> "April"
-      5 -> "May"
-      6 -> "June"
-      7 -> "July"
-      8 -> "August"
-      9 -> "September"
-      10 -> "October"
-      11 -> "November"
-      12 -> "December"
     end
   end
 

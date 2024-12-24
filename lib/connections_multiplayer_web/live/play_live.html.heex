@@ -2,6 +2,10 @@
     <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id} class={["w-[4rem] rounded-full",
         meta.colour]} aria-label={"Anonymous #{avatar_name(id)}"}>
         <img src={"/images/avatars/#{avatar_name(id)}.png"} alt={"Anonymous #{avatar_name(id)}"} class="p-4 w-full" />
+        <.tooltip class="px-4 py-2 font-medium text-black bg-card border-2 border-card-selected rounded-md">
+            Anonymous {avatar_name(id)}
+        </.tooltip>
+
     </li>
 </ul>
 

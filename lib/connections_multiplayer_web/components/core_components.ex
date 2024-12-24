@@ -597,6 +597,22 @@ defmodule ConnectionsMultiplayerWeb.CoreComponents do
     """
   end
 
+  attr :class, :string, default: nil
+  slot :inner_block, required: true
+
+  def tooltip(assigns) do
+    ~H"""
+    <div id={random_id("tt")} class={["tooltip", @class]} role="tooltip" phx-hook="TooltipHook">
+      {render_slot(@inner_block)}
+      <div class="arrow" data-popper-arrow></div>
+    </div>
+    """
+  end
+
+  def random_id(prefix) do
+    prefix <> "_" <> (:crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false))
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do

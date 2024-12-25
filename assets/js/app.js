@@ -42,7 +42,7 @@ class Tooltip {
         {
           name: 'offset',
           options: {
-            offset: [0, -8],
+            offset: [0, 8],
           },
         },
       ],
@@ -124,6 +124,31 @@ Hooks.Avatar = {
           onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id })
         }
       );
+    })
+
+    const el = document.querySelector(`#${this.el.id}>div`)
+
+    const tl = gsap.timeline({ paused: true });
+    tl.to(el, { scale: 1.1, duration: 0.3 })
+    tl.add("afterScale")
+    tl.to(el, { rotation: 25, duration: 0.5 })
+    tl.to(el, { rotation: -25, duration: 1 })
+    tl.to(el, { rotation: 0, duration: 0.5 })
+    tl.add("end")
+
+    const tl2 = gsap.timeline({ paused: true })
+    tl2.add(tl.tweenFromTo(0, "afterScale"))
+    tl2.add(tl.tweenFromTo("afterScale", tl.duration(), { repeat: -1 }))
+    tl2.pause()
+
+    this.el.addEventListener("mouseenter", () => {
+      console.log("mouseenter")
+      tl2.play()
+    })
+    this.el.addEventListener("mouseleave", () => {
+      console.log("mouseleave")
+      tl2.pause()
+      gsap.to(el, { scale: 1, rotation: 0, duration: 0.3, onComplete: () => tl2.revert() })
     })
   },
 }

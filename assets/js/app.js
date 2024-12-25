@@ -115,7 +115,15 @@ Hooks.Avatar = {
     gsap.to(this.el, { scale: 1, duration: 1, ease: "elastic.out(0.4,0.2)" });
 
     this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
-      gsap.to(this.el, { scale: 0, duration: 0.7, ease: "elastic.in(0.4,0.2)", onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id }) });
+      gsap.to(
+        this.el,
+        {
+          scale: 0,
+          duration: 0.7,
+          ease: "elastic.in(0.4,0.2)",
+          onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id })
+        }
+      );
     })
   },
 }

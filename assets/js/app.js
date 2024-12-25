@@ -156,14 +156,28 @@ Hooks.Avatar = {
 
 Hooks.CardButton = {
   mounted() {
+    function fitText(el) {
+      textFit(el, { maxFontSize: 16 })
+    }
+
+    fitText(this.el);
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        textFit(entry.target)
+        fitText(entry.target)
+      }
+    });
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "childList") {
+          fitText(mutation.target);
+        }
       }
     });
 
     resizeObserver.observe(this.el);
-    textFit(this.el);
+    mutationObserver.observe(this.el, { childList: true });
   }
 }
 

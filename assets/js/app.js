@@ -142,13 +142,12 @@ Hooks.Avatar = {
     tl2.pause()
 
     this.el.addEventListener("mouseenter", () => {
-      console.log("mouseenter")
+      tl2.revert()
       tl2.play()
     })
     this.el.addEventListener("mouseleave", () => {
-      console.log("mouseleave")
       tl2.pause()
-      gsap.to(el, { scale: 1, rotation: 0, duration: 0.3, onComplete: () => tl2.revert() })
+      gsap.to(el, { scale: 1, rotation: 0, duration: 0.3 })
     })
   },
 }

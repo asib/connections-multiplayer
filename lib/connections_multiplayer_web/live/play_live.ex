@@ -115,16 +115,23 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
           if !is_nil(socket.assigns[:avatar]) do
             socket
           else
+            socket =
+              assign(
+                socket,
+                :avatar,
+                "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}"
+              )
+
+            Presence.track_user(socket.assigns.avatar, %{
+              id: socket.assigns.avatar,
+              colour: Enum.random(@colours)
+            })
+
+            Presence.subscribe()
+
             socket
-            |> assign(:avatar, "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}")
           end
 
-        Presence.track_user(socket.assigns.avatar, %{
-          id: socket.assigns.avatar,
-          colour: Enum.random(@colours)
-        })
-
-        Presence.subscribe()
         stream(socket, :presences, Presence.list_online_users())
       else
         socket

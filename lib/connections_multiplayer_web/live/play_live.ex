@@ -186,6 +186,11 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   @impl true
+  def handle_event("delete_presence", %{"dom_id" => dom_id}, socket) do
+    {:noreply, stream_delete_by_dom_id(socket, :presences, dom_id)}
+  end
+
+  @impl true
   def handle_info({:state_update, new_state}, socket) do
     socket =
       new_state
@@ -214,7 +219,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   @impl true
   def handle_info({ConnectionsMultiplayerWeb.Presence, {:leave, presence}}, socket) do
     if presence.metas == [] do
-      {:noreply, stream_delete(socket, :presences, presence)}
+      {:noreply, push_event(socket, "animate-out-#{presence.id}", %{})}
     else
       {:noreply, stream_insert(socket, :presences, presence)}
     end

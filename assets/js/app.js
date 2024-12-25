@@ -21,10 +21,12 @@ import "phoenix_html"
 import { Socket } from "phoenix"
 import { LiveSocket } from "phoenix_live_view"
 import topbar from "../vendor/topbar"
-
 import { createPopper } from '@popperjs/core';
+import gsap from "gsap";
 
-// A class to manage the tooltip lifecycle.
+
+const Hooks = {};
+
 class Tooltip {
   showEvents = ['mouseenter', 'focus'];
   hideEvents = ['mouseleave', 'blur'];
@@ -96,20 +98,27 @@ class Tooltip {
   }
 }
 
-const Hooks = {
-  TooltipHook: {
-    mounted() {
-      this.el.tooltip = new Tooltip(this.el);
-    },
-    updated() {
-      this.el.tooltip?.update();
-    },
-    destroyed() {
-      this.el.tooltip?.destroy();
-    },
+Hooks.TooltipHook = {
+  mounted() {
+    this.el.tooltip = new Tooltip(this.el);
   },
-};
+  updated() {
+    this.el.tooltip?.update();
+  },
+  destroyed() {
+    this.el.tooltip?.destroy();
+  },
+}
 
+Hooks.Avatar = {
+  mounted() {
+    gsap.to(this.el, { scale: 1, duration: 1, ease: "elastic.out(0.4,0.2)" });
+
+    this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
+      gsap.to(this.el, { scale: 0, duration: 0.7, ease: "elastic.in(0.4,0.2)", onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id }) });
+    })
+  },
+}
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

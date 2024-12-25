@@ -23,7 +23,7 @@ import { LiveSocket } from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import { createPopper } from '@popperjs/core';
 import gsap from "gsap";
-
+import textFit from "textfit";
 
 const Hooks = {};
 
@@ -152,6 +152,21 @@ Hooks.Avatar = {
   },
 }
 
+
+
+Hooks.CardButton = {
+  mounted() {
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        textFit(entry.target)
+      }
+    });
+
+    resizeObserver.observe(this.el);
+    textFit(this.el);
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
@@ -172,4 +187,3 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
-

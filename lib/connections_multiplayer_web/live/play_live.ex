@@ -1,9 +1,9 @@
 defmodule ConnectionsMultiplayerWeb.PlayLive do
-  alias ConnectionsMultiplayerWeb.Presence
   use ConnectionsMultiplayerWeb, :live_view
 
   alias ConnectionsMultiplayerWeb.Game
   alias ConnectionsMultiplayerWeb.GameRegistry
+  alias ConnectionsMultiplayerWeb.Presence
   alias Phoenix.LiveView.AsyncResult
 
   @game_id "hardcoded-game-id"
@@ -103,46 +103,34 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      GameRegistry.subscribe(@game_id)
-    end
-
-    socket = stream(socket, :presences, [])
+    socket =
+      socket
+      |> stream(:presences, [])
+      |> assign_new(
+        :avatar,
+        fn -> "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}" end
+      )
+      |> assign_new(:colour, fn -> Enum.random(@colours) end)
+      |> assign_async(
+        [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
+        fn -> load_game(@game_id) end
+      )
 
     socket =
       if connected?(socket) do
-        socket =
-          if !is_nil(socket.assigns[:avatar]) do
-            socket
-          else
-            socket =
-              assign(
-                socket,
-                :avatar,
-                "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}"
-              )
+        GameRegistry.subscribe(@game_id)
 
-            Presence.track_user(socket.assigns.avatar, %{
-              id: socket.assigns.avatar,
-              colour: Enum.random(@colours)
-            })
+        Presence.track_user(socket.assigns.avatar, %{
+          id: socket.assigns.avatar,
+          colour: socket.assigns.colour
+        })
 
-            Presence.subscribe()
-
-            socket
-          end
+        Presence.subscribe()
 
         stream(socket, :presences, Presence.list_online_users())
       else
         socket
       end
-
-    socket =
-      assign_async(
-        socket,
-        [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
-        fn -> load_game(@game_id) end
-      )
 
     {:ok, socket}
   end

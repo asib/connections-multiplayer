@@ -157,7 +157,7 @@ Hooks.Avatar = {
 Hooks.CardButton = {
   mounted() {
     function fitText(el) {
-      textFit(el, { maxFontSize: 16 })
+      textFit(el, { maxFontSize: 16, multiLine: true })
     }
 
     fitText(this.el);

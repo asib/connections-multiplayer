@@ -160,7 +160,9 @@ Hooks.CardButton = {
       textFit(el, { maxFontSize: 16, multiLine: true })
     }
 
-    fitText(this.el);
+    const el = this.el.querySelector("#card-button-text")
+
+    fitText(el);
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -176,8 +178,8 @@ Hooks.CardButton = {
       }
     });
 
-    resizeObserver.observe(this.el);
-    mutationObserver.observe(this.el, { childList: true });
+    resizeObserver.observe(el);
+    mutationObserver.observe(el, { childList: true });
   }
 }
 

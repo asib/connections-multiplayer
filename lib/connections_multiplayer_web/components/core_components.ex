@@ -597,7 +597,7 @@ defmodule ConnectionsMultiplayerWeb.CoreComponents do
     """
   end
 
-  attr :class, :string, default: nil
+  attr :class, :any, default: nil
   slot :inner_block, required: true
 
   def tooltip(assigns) do

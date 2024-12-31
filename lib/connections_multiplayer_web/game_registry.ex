@@ -23,9 +23,9 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
   end
 
   @impl true
-  def handle_call({:toggle_card, game_id, card}, _from, tid) do
+  def handle_call({:toggle_card, game_id, card, avatar, colour}, _from, tid) do
     with [{^game_id, game_pid}] <- :ets.lookup(tid, game_id),
-         :ok <- Game.toggle_card(game_pid, game_id, card) do
+         :ok <- Game.toggle_card(game_pid, game_id, card, avatar, colour) do
       {:reply, :ok, tid}
     else
       _ -> {:reply, {:error, :toggle_failed}, tid}
@@ -81,8 +81,8 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
     GenServer.call(__MODULE__, {:load, game_id})
   end
 
-  def toggle_card(game_id, card) do
-    GenServer.call(__MODULE__, {:toggle_card, game_id, card})
+  def toggle_card(game_id, card, avatar, colour) do
+    GenServer.call(__MODULE__, {:toggle_card, game_id, card, avatar, colour})
   end
 
   def deselect_all_cards(game_id) do

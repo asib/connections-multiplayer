@@ -101,6 +101,28 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     bg-rose-700
   )
 
+  # These aren't actually used anywhere, but we need to
+  # list them somewhere in the source code for Tailwind
+  # to generate the CSS: https://elixirforum.com/t/using-generated-class-names-in-tailwind-under-phoenix-1-7/57995/2
+  @border_colours ~w(
+      border-slate-600/50
+      border-red-900/50
+      border-orange-700/50
+      border-amber-600/50
+      border-lime-600/50
+      border-green-800/50
+      border-teal-600/50
+      border-cyan-600/50
+      border-sky-700/50
+      border-blue-600/50
+      border-indigo-600/50
+      border-violet-700/50
+      border-purple-600/50
+      border-fuchsia-700/50
+      border-pink-500/50
+      border-rose-700/50
+    )
+
   @impl true
   def mount(_params, _session, socket) do
     socket =
@@ -137,7 +159,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def handle_event("toggle_card", %{"card" => card}, socket) do
-    :ok = GameRegistry.toggle_card(@game_id, card)
+    :ok = GameRegistry.toggle_card(@game_id, card, socket.assigns.avatar, socket.assigns.colour)
 
     {:noreply, socket}
   end
@@ -300,7 +322,9 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     cards
     |> Map.to_list()
     |> Enum.sort_by(fn {_, %{position: position}} -> position end)
-    |> Enum.map(fn {content, %{selected: selected}} -> {content, selected} end)
+    |> Enum.map(fn {content, params} ->
+      {content, Map.take(params, [:selected, :avatar, :colour])}
+    end)
   end
 
   defp category_colour(difficulty) do
@@ -310,6 +334,22 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       2 -> "bg-[#b0c4ef]"
       3 -> "bg-[#ba81c5]"
     end
+  end
+
+  defp border_colour_from_bg_colour(colour) do
+    colour = String.replace_prefix(colour, "bg-", "")
+    "border-#{colour}/50"
+  end
+
+  defp card_button_class(params) do
+    [
+      "rounded-md font-bold overflow-hidden",
+      "flex flex-wrap content-center justify-center bg-card",
+      if(params.selected,
+        do: ["border-4 p-1", border_colour_from_bg_colour(params.colour)],
+        else: "p-2"
+      )
+    ]
   end
 
   defp submittable(cards) do

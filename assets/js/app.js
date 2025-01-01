@@ -112,46 +112,52 @@ Hooks.TooltipHook = {
 
 Hooks.Avatar = {
   mounted() {
-    gsap.to(this.el, { scale: 1, duration: 1, ease: "elastic.out(0.4,0.2)" });
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
+        this.pushEvent("delete_presence", { dom_id: this.el.id })
+      });
+    } else {
+      gsap.to(this.el, { scale: 1, duration: 1, ease: "elastic.out(0.4,0.2)" });
 
-    this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
-      this.el.classList.remove("mr-2");
-      gsap.to(
-        this.el,
-        {
-          scale: 0,
-          width: 0,
-          transformOrigin: "left center",
-          duration: 0.5,
-          ease: "power4.out",
-          onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id })
-        }
-      );
-    })
+      this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
+        this.el.classList.remove("mr-2");
+        gsap.to(
+          this.el,
+          {
+            scale: 0,
+            width: 0,
+            transformOrigin: "left center",
+            duration: 0.5,
+            ease: "power4.out",
+            onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id })
+          }
+        );
+      })
 
-    const el = document.querySelector(`#${this.el.id}>div`)
+      const el = document.querySelector(`#${this.el.id}>div`)
 
-    const tl = gsap.timeline({ paused: true, defaults: { ease: "power1.out" } });
-    tl.to(el, { scale: 1.1, duration: 0.3 })
-    tl.add("afterScale")
-    tl.to(el, { rotation: 25, duration: 0.5 })
-    tl.to(el, { rotation: -25, duration: 1 })
-    tl.to(el, { rotation: 0, duration: 0.5 })
-    tl.add("end")
+      const tl = gsap.timeline({ paused: true, defaults: { ease: "power1.out" } });
+      tl.to(el, { scale: 1.1, duration: 0.3 })
+      tl.add("afterScale")
+      tl.to(el, { rotation: 25, duration: 0.5 })
+      tl.to(el, { rotation: -25, duration: 1 })
+      tl.to(el, { rotation: 0, duration: 0.5 })
+      tl.add("end")
 
-    const tl2 = gsap.timeline({ paused: true })
-    tl2.add(tl.tweenFromTo(0, "afterScale"))
-    tl2.add(tl.tweenFromTo("afterScale", tl.duration(), { repeat: -1 }))
-    tl2.pause()
-
-    this.el.addEventListener("mouseenter", () => {
-      tl2.revert()
-      tl2.play()
-    })
-    this.el.addEventListener("mouseleave", () => {
+      const tl2 = gsap.timeline({ paused: true })
+      tl2.add(tl.tweenFromTo(0, "afterScale"))
+      tl2.add(tl.tweenFromTo("afterScale", tl.duration(), { repeat: -1 }))
       tl2.pause()
-      gsap.to(el, { scale: 1, rotation: 0, duration: 0.3, onComplete: () => tl2.revert() })
-    })
+
+      this.el.addEventListener("mouseenter", () => {
+        tl2.revert()
+        tl2.play()
+      })
+      this.el.addEventListener("mouseleave", () => {
+        tl2.pause()
+        gsap.to(el, { scale: 1, rotation: 0, duration: 0.3, onComplete: () => tl2.revert() })
+      })
+    }
   },
 }
 

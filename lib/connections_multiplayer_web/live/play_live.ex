@@ -105,22 +105,22 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   # list them somewhere in the source code for Tailwind
   # to generate the CSS: https://elixirforum.com/t/using-generated-class-names-in-tailwind-under-phoenix-1-7/57995/2
   @border_colours ~w(
-      border-slate-600/50
-      border-red-900/50
-      border-orange-700/50
-      border-amber-600/50
-      border-lime-600/50
-      border-green-800/50
-      border-teal-600/50
-      border-cyan-600/50
-      border-sky-700/50
-      border-blue-600/50
-      border-indigo-600/50
-      border-violet-700/50
-      border-purple-600/50
-      border-fuchsia-700/50
-      border-pink-500/50
-      border-rose-700/50
+      border-slate-600
+      border-red-900
+      border-orange-700
+      border-amber-600
+      border-lime-600
+      border-green-800
+      border-teal-600
+      border-cyan-600
+      border-sky-700
+      border-blue-600
+      border-indigo-600
+      border-violet-700
+      border-purple-600
+      border-fuchsia-700
+      border-pink-500
+      border-rose-700
     )
 
   @impl true
@@ -338,7 +338,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   defp border_colour_from_bg_colour(colour) do
     colour = String.replace_prefix(colour, "bg-", "")
-    "border-#{colour}/50"
+    "border-#{colour}"
   end
 
   defp card_button_class(params) do

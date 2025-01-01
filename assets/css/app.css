@@ -2,48 +2,57 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* This file is for your main application CSS */
-.tooltip {
-    display: none;
-}
+@layer base {
 
-.tooltip[data-show] {
-    display: block;
-}
+    .tooltip,
+    .tooltip>.arrow,
+    .tooltip>.arrow::before {
+        display: none;
+    }
 
-.tooltip>.arrow,
-.tooltip>.arrow:before {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: inherit;
-    border: inherit;
-    border-bottom: none;
-    border-right: none;
-}
 
-.tooltip>.arrow {
-    visibility: hidden;
-}
 
-.tooltip>.arrow::before {
-    visibility: visible;
-    content: '';
-    transform: rotate(45deg);
-}
+    @media screen(sm) {
+        .tooltip[data-show] {
+            display: block;
+        }
 
-.tooltip[data-popper-placement^='top']>.arrow {
-    bottom: -7.5px;
-}
+        .tooltip>.arrow,
+        .tooltip>.arrow::before {
+            display: block;
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: inherit;
+            border: inherit;
+            border-bottom: none;
+            border-right: none;
+        }
 
-.tooltip[data-popper-placement^='bottom']>.arrow {
-    top: -7.5px;
-}
+        .tooltip>.arrow {
+            visibility: hidden;
+        }
 
-.tooltip[data-popper-placement^='left']>.arrow {
-    right: -7.5px;
-}
+        .tooltip>.arrow::before {
+            visibility: visible;
+            content: '';
+            transform: rotate(45deg);
+        }
 
-.tooltip[data-popper-placement^='right']>.arrow {
-    left: -7.5px;
+        .tooltip[data-popper-placement^='top']>.arrow {
+            bottom: -7.5px;
+        }
+
+        .tooltip[data-popper-placement^='bottom']>.arrow {
+            top: -7.5px;
+        }
+
+        .tooltip[data-popper-placement^='left']>.arrow {
+            right: -7.5px;
+        }
+
+        .tooltip[data-popper-placement^='right']>.arrow {
+            left: -7.5px;
+        }
+    }
 }

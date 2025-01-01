@@ -25,8 +25,8 @@
     class="mx-auto grid grid-cols-[repeat(4,1fr)] grid-rows-[repeat(4,1fr)] w-[calc(3*8px+4*22.5vw)] h-[calc(3*8px+4*22.5vw)] sm:w-[calc(3*8px+4*150px)] sm:h-[calc(3*8px+4*80px)] gap-x-2 sm:gap-x-3 gap-y-2">
     <.async_result :let={category_difficulties} assign={@category_difficulties}>
         <.async_result :let={found_categories} assign={@found_categories}>
-            <div :for={{category, cards} <- Enum.reverse(found_categories)} class={["text-center col-span-4 py-4
-                rounded-md", category_colour(category_difficulties[category]) ]}>
+            <div :for={{category, cards} <- Enum.reverse(found_categories)}
+                class={completed_category_class(category_difficulties, category)}>
                 <h3 class="text-lg font-bold">{category}</h3>
                 <p>{Enum.join(cards, ", ")}</p>
             </div>

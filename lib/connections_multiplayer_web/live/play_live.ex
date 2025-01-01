@@ -213,6 +213,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       new_state
       |> game_state_to_map()
       |> then(&assign_game_state(socket, &1))
+      |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
 
     {:noreply, socket}
   end
@@ -224,6 +225,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> game_state_to_map()
       |> then(&assign_game_state(socket, &1))
       |> put_flash(flash_kind, message)
+      |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
 
     {:noreply, socket}
   end
@@ -318,6 +320,14 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     end)
   end
 
+  defp maybe_fire_confetti(socket, old_found_categories, new_found_categories) do
+    if length(old_found_categories) < length(new_found_categories) do
+      push_event(socket, "fire-confetti-cannon", %{})
+    else
+      socket
+    end
+  end
+
   defp cards_in_order(cards) do
     cards
     |> Map.to_list()
@@ -350,6 +360,10 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
         else: "p-2"
       )
     ]
+  end
+
+  defp completed_category_class(category_difficulties, category) do
+    ["text-center col-span-4 py-4 rounded-md", category_colour(category_difficulties[category])]
   end
 
   defp submittable(cards) do

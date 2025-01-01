@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@popperjs/core": "^2.11.8",
+    "canvas-confetti": "^1.9.3",
     "gsap": "^3.12.5",
     "textfit": "^2.4.0"
   }

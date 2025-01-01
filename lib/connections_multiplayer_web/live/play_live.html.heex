@@ -1,6 +1,6 @@
-<ul id="online_users" phx-update="stream" class="flex space-x-2">
-    <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id} class="scale-0 w-[4rem]"
-        aria-label={"Anonymous #{avatar_name(id)}"} phx-hook="Avatar" phx-mounted={JS.dispatch("animate-in")}
+<ul id="online_users" phx-update="stream" class="flex">
+    <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id} class="scale-0 w-[4rem] mr-2"
+        aria-label={"Anonymous #{avatar_name(id)}"} phx-hook="Avatar" phx-mounted={JS.dispatch("animate-in-#{id}")}
         data-avatar-id={id}>
         <div class={["w-full rounded-full", meta.colour]}>
             <img src={"/images/avatars/#{avatar_name(id)}.png"} alt={"Anonymous #{avatar_name(id)}"}
@@ -20,7 +20,7 @@
         </.form>
     </.async_result>
 </.async_result>
-<!-- <p class="font-light font-serif pb-4">{human_month(@puzzle_date)} {@puzzle_date.day}, {@puzzle_date.year}</p> -->
+
 <div
     class="mx-auto grid grid-cols-[repeat(4,1fr)] grid-rows-[repeat(4,1fr)] w-[calc(3*8px+4*22.5vw)] h-[calc(3*8px+4*22.5vw)] sm:w-[calc(3*8px+4*150px)] sm:h-[calc(3*8px+4*80px)] gap-x-2 sm:gap-x-3 gap-y-2">
     <.async_result :let={category_difficulties} assign={@category_difficulties}>
@@ -46,7 +46,8 @@
                 border_colour_from_bg_colour(params.colour)]}>
                 Anonymous {avatar_name(params.avatar)} {if(params.avatar == @avatar, do: "(You)")}
             </.tooltip>
-            <p id="card-button-text" class="w-full h-full flex flex-wrap content-center justify-center">{card}</p>
+            <p id={"card-button-text-#{card}"} class="w-full h-full flex flex-wrap content-center justify-center">{card}
+            </p>
         </button>
     </.async_result>
 </div>

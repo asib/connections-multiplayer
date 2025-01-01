@@ -115,12 +115,15 @@ Hooks.Avatar = {
     gsap.to(this.el, { scale: 1, duration: 1, ease: "elastic.out(0.4,0.2)" });
 
     this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
+      this.el.classList.remove("mr-2");
       gsap.to(
         this.el,
         {
           scale: 0,
-          duration: 0.7,
-          ease: "elastic.in(0.4,0.2)",
+          width: 0,
+          transformOrigin: "left center",
+          duration: 0.5,
+          ease: "power4.out",
           onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id })
         }
       );
@@ -147,7 +150,7 @@ Hooks.Avatar = {
     })
     this.el.addEventListener("mouseleave", () => {
       tl2.pause()
-      gsap.to(el, { scale: 1, rotation: 0, duration: 0.3 })
+      gsap.to(el, { scale: 1, rotation: 0, duration: 0.3, onComplete: () => tl2.revert() })
     })
   },
 }
@@ -160,7 +163,7 @@ Hooks.CardButton = {
       textFit(el, { maxFontSize: 16, multiLine: true })
     }
 
-    const el = this.el.querySelector("#card-button-text")
+    const el = this.el.querySelector(`#card-button-text-${this.el.id}`)
 
     fitText(el);
 

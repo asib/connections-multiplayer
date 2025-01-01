@@ -61,7 +61,8 @@ function fire(particleRatio, opts) {
   confetti({
     ...defaults,
     ...opts,
-    particleCount: Math.floor(count * particleRatio)
+    particleCount: Math.floor(count * particleRatio),
+    disableForReducedMotion: true,
   });
 }
 

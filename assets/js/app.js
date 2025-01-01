@@ -178,7 +178,7 @@ Hooks.Avatar = {
       const el = document.querySelector(`#${this.el.id}>div`)
 
       const tl = gsap.timeline({ paused: true, defaults: { ease: "power1.out" } });
-      tl.to(el, { scale: 1.1, duration: 0.3 })
+      tl.to(el, { scale: 1.1, duration: 0.3, onComplete: () => console.log("scaled") })
       tl.add("afterScale")
       tl.to(el, { rotation: 25, duration: 0.5 })
       tl.to(el, { rotation: -25, duration: 1 })
@@ -187,16 +187,14 @@ Hooks.Avatar = {
 
       const tl2 = gsap.timeline({ paused: true })
       tl2.add(tl.tweenFromTo(0, "afterScale"))
-      tl2.add(tl.tweenFromTo("afterScale", tl.duration(), { repeat: -1 }))
-      tl2.pause()
+      tl2.add(tl.tweenFromTo("afterScale", "end", { repeat: -1 }))
 
       this.el.addEventListener("mouseenter", () => {
-        tl2.revert()
-        tl2.play()
+        tl2.play(0)
       })
       this.el.addEventListener("mouseleave", () => {
         tl2.pause()
-        gsap.to(el, { scale: 1, rotation: 0, duration: 0.3, onComplete: () => tl2.revert() })
+        gsap.to(el, { scale: 1, rotation: 0, duration: 0.3 })
       })
     }
   },

@@ -363,7 +363,10 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   defp completed_category_class(category_difficulties, category) do
-    ["text-center col-span-4 py-4 rounded-md", category_colour(category_difficulties[category])]
+    [
+      "flex flex-col content-center justify-center text-center col-span-4 rounded-md",
+      category_colour(category_difficulties[category])
+    ]
   end
 
   defp submittable(cards) do

@@ -165,6 +165,13 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   @impl true
+  def handle_event("hint", _params, socket) do
+    :ok = GameRegistry.hint(@game_id)
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("deselect_all", _params, socket) do
     :ok = GameRegistry.deselect_all_cards(@game_id)
 
@@ -226,6 +233,16 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> then(&assign_game_state(socket, &1))
       |> put_flash(flash_kind, message)
       |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:hint, cards}, socket) do
+    socket =
+      Enum.reduce(cards, socket, fn card, socket ->
+        push_event(socket, "animate-hint-#{card}", %{})
+      end)
 
     {:noreply, socket}
   end
@@ -371,6 +388,10 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   defp submittable(cards) do
     cards.ok? && Game.num_cards_selected(cards.result) == 4
+  end
+
+  defp hintable(cards) do
+    !cards.ok? || is_nil(cards.result) || map_size(cards.result) > 4
   end
 
   defp avatar_name(id) do

@@ -62,6 +62,16 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
     end
   end
 
+  @impl true
+  def handle_call({:hint, game_id}, _from, tid) do
+    with [{^game_id, game_pid}] <- :ets.lookup(tid, game_id),
+         :ok <- Game.hint(game_pid, game_id) do
+      {:reply, :ok, tid}
+    else
+      _ -> {:reply, {:error, :submit_failed}, tid}
+    end
+  end
+
   defp create_new_game(tid, game_id) do
     with {:ok, new_game_pid} <- Game.start_link(),
          {:ok, game_state} <- Game.load(new_game_pid),
@@ -95,6 +105,10 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
 
   def submit(game_id) do
     GenServer.call(__MODULE__, {:submit, game_id})
+  end
+
+  def hint(game_id) do
+    GenServer.call(__MODULE__, {:hint, game_id})
   end
 
   def subscribe(game_id) do

@@ -226,6 +226,10 @@ Hooks.CardButton = {
 
     resizeObserver.observe(el);
     mutationObserver.observe(el, { childList: true });
+
+    this.handleEvent(`animate-hint-${this.el.id}`, () => {
+      gsap.fromTo(this.el, { rotate: 15 }, { rotation: 0, ease: "elastic.out(1.2,0.1)", duration: 2 })
+    });
   }
 }
 

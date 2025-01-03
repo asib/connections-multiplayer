@@ -30,6 +30,10 @@ defmodule ConnectionsMultiplayerWeb.Game do
     GenServer.call(pid, {:submit, game_id})
   end
 
+  def hint(pid, game_id) do
+    GenServer.call(pid, {:hint, game_id})
+  end
+
   @impl true
   def init(_) do
     case new_game() do
@@ -168,6 +172,38 @@ defmodule ConnectionsMultiplayerWeb.Game do
     )
 
     {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(
+        {:hint, game_id},
+        _from,
+        %__MODULE__{
+          cards: cards,
+          found_categories: found_categories,
+          category_difficulties: category_difficulties
+        } = game_state
+      ) do
+    found = Enum.map(found_categories, fn {category, _} -> category end)
+
+    [{category, _difficulty} | _rest] =
+      category_difficulties
+      |> Enum.filter(fn {category, _difficulty} -> !Enum.member?(found, category) end)
+      |> Enum.sort_by(fn {_category, difficulty} -> difficulty end)
+      |> Enum.take(1)
+
+    [{card_a, _}, {card_b, _} | _rest] =
+      cards
+      |> Enum.filter(fn {_card, %{category: card_category}} -> card_category == category end)
+      |> Enum.take(2)
+
+    PubSub.broadcast(
+      ConnectionsMultiplayer.PubSub,
+      "game:#{game_id}",
+      {:hint, [card_a, card_b]}
+    )
+
+    {:reply, :ok, game_state}
   end
 
   def num_cards_selected(cards) do

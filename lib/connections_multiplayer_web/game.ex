@@ -3,8 +3,8 @@ defmodule ConnectionsMultiplayerWeb.Game do
 
   alias Phoenix.PubSub
 
-  @enforce_keys [:puzzle_date, :found_categories, :cards, :category_difficulties]
-  defstruct [:puzzle_date, :found_categories, :cards, :category_difficulties]
+  @enforce_keys [:puzzle_date, :found_categories, :cards, :category_difficulties, :hinted?]
+  defstruct [:puzzle_date, :found_categories, :cards, :category_difficulties, :hinted?]
 
   def start_link() do
     GenServer.start_link(__MODULE__, nil)
@@ -163,7 +163,20 @@ defmodule ConnectionsMultiplayerWeb.Game do
         {{:error, message}, new_cards, found_categories}
       end
 
-    new_state = %__MODULE__{game_state | cards: new_cards, found_categories: new_found_categories}
+    new_state =
+      case flash_kind do
+        :success ->
+          # Reset hinted? state if a category is found
+          %__MODULE__{
+            game_state
+            | cards: new_cards,
+              found_categories: new_found_categories,
+              hinted?: false
+          }
+
+        :error ->
+          %__MODULE__{game_state | cards: new_cards, found_categories: new_found_categories}
+      end
 
     PubSub.broadcast(
       ConnectionsMultiplayer.PubSub,
@@ -181,7 +194,8 @@ defmodule ConnectionsMultiplayerWeb.Game do
         %__MODULE__{
           cards: cards,
           found_categories: found_categories,
-          category_difficulties: category_difficulties
+          category_difficulties: category_difficulties,
+          hinted?: hinted?
         } = game_state
       ) do
     found = Enum.map(found_categories, fn {category, _} -> category end)
@@ -192,18 +206,23 @@ defmodule ConnectionsMultiplayerWeb.Game do
       |> Enum.sort_by(fn {_category, difficulty} -> difficulty end)
       |> Enum.take(1)
 
-    [{card_a, _}, {card_b, _} | _rest] =
+    num_cards = if(hinted?, do: 3, else: 2)
+
+    hint_cards =
       cards
       |> Enum.filter(fn {_card, %{category: card_category}} -> card_category == category end)
-      |> Enum.take(2)
+      |> Enum.take(num_cards)
+      |> Enum.map(fn {card, _card_info} -> card end)
 
     PubSub.broadcast(
       ConnectionsMultiplayer.PubSub,
       "game:#{game_id}",
-      {:hint, [card_a, card_b]}
+      {:hint, hint_cards}
     )
 
-    {:reply, :ok, game_state}
+    new_state = %__MODULE__{game_state | hinted?: true}
+
+    {:reply, :ok, new_state}
   end
 
   def num_cards_selected(cards) do
@@ -220,7 +239,8 @@ defmodule ConnectionsMultiplayerWeb.Game do
          puzzle_date: puzzle_date,
          found_categories: [],
          cards: cards,
-         category_difficulties: category_difficulties
+         category_difficulties: category_difficulties,
+         hinted?: false
        }}
     end
   end

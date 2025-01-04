@@ -153,28 +153,7 @@ Hooks.TooltipHook = {
 
 Hooks.Avatar = {
   mounted() {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
-        this.pushEvent("delete_presence", { dom_id: this.el.id })
-      });
-    } else {
-      gsap.to(this.el, { scale: 1, duration: 1, ease: "elastic.out(0.4,0.2)" });
-
-      this.handleEvent(`animate-out-${this.el.dataset.avatarId}`, () => {
-        this.el.classList.remove("mr-2");
-        gsap.to(
-          this.el,
-          {
-            scale: 0,
-            width: 0,
-            transformOrigin: "left center",
-            duration: 0.5,
-            ease: "power4.out",
-            onComplete: () => this.pushEvent("delete_presence", { dom_id: this.el.id })
-          }
-        );
-      })
-
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const el = document.querySelector(`#${this.el.id}>div`)
 
       const tl = gsap.timeline({ paused: true, defaults: { ease: "power1.out" } });

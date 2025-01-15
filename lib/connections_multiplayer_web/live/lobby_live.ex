@@ -37,20 +37,22 @@ defmodule ConnectionsMultiplayerWeb.LobbyLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="grid grid-rows-[1fr,min-content,1fr] h-full rounded-lg mx-auto bg-[rgb(179,167,254)] p-4">
-      <h1 class="text-3xl font-[Charter] text-center pb-8 self-end">
+    <div class="flex flex-col flex-wrap items-center justify-center content-center lg:grid lg:grid-rows-[1fr,min-content,1fr] h-full rounded-lg mx-auto bg-[rgb(179,167,254)] p-4 mx-4">
+      <h1 class="text-4xl font-[Charter] text-center pb-8 self-end">
         Connections Multiplayer
       </h1>
 
-      <div class="flex flex-col justift-center items-center">
+      <div class="flex flex-col justify-center items-center">
         <button
           class="bg-black text-white rounded-full py-2 px-4 sm:py-4 sm:px-6 text-center"
           phx-click="new-game"
         >
           New Game
         </button>
-        <p class="pt-4">
-          {@active_games_count} games are currently being played with {@active_players_count} players online.
+        <p class="pt-4 text-center">
+          <span class="font-bold">{@active_games_count}</span>
+          games are currently being played with <span class="font-bold">{@active_players_count}</span>
+          players online.
         </p>
       </div>
     </div>

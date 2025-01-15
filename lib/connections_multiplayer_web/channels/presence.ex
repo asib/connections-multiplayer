@@ -51,8 +51,8 @@ defmodule ConnectionsMultiplayerWeb.Presence do
     {:ok, state}
   end
 
-  def list_online_users(),
-    do: list("online_users") |> Enum.map(fn {_id, presence} -> presence end)
+  def list_online_users(game_id),
+    do: list("#{game_id}:online_users") |> Enum.map(fn {_id, presence} -> presence end)
 
   def track_user(game_id, name, params),
     do: track(self(), "#{game_id}:online_users", name, params)

@@ -146,7 +146,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
         Presence.subscribe(socket.assigns.game_id)
 
-        stream(socket, :presences, Presence.list_online_users())
+        stream(socket, :presences, Presence.list_online_users(socket.assigns.game_id))
       else
         socket
       end

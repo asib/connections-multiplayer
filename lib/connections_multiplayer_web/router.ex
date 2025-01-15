@@ -10,10 +10,12 @@ defmodule ConnectionsMultiplayerWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  scope "/", ConnectionsMultiplayerWeb do
-    pipe_through :browser
+  live_session :default, on_mount: ConnectionsMultiplayerWeb.Hooks.InitAssigns do
+    scope "/", ConnectionsMultiplayerWeb do
+      pipe_through :browser
 
-    live "/", LobbyLive
-    live "/:game_id", PlayLive
+      live "/", LobbyLive
+      live "/:game_id", PlayLive
+    end
   end
 end

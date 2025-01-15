@@ -125,6 +125,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       socket
       |> stream(:presences, [])
       |> assign(:game_id, game_id)
+      |> assign(:is_game_page?, true)
       |> assign_new(
         :avatar,
         fn -> "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}" end

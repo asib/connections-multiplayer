@@ -1,9 +1,10 @@
 <ul id="online_users" phx-update="stream" class="flex">
-    <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id} class="w-[4rem] mr-2"
-        aria-label={"Anonymous #{avatar_name(id)}"} phx-hook="Avatar" data-avatar-id={id}>
+    <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id}
+        class="size-12 sm:size-[4rem] mr-2" aria-label={"Anonymous #{avatar_name(id)}"} phx-hook="Avatar"
+        data-avatar-id={id}>
         <div class={["w-full rounded-full", meta.colour]}>
             <img src={"/images/avatars/#{avatar_name(id)}.png"} alt={"Anonymous #{avatar_name(id)}"}
-                class="p-4 w-full" />
+                class="p-3 sm:p-4 w-full" />
         </div>
         <.tooltip class="px-4 py-2 font-medium text-black bg-card border-2 border-card-selected rounded-md">
             Anonymous {avatar_name(id)} {if(id == @avatar, do: "(You)")}

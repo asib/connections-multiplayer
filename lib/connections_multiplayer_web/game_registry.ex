@@ -100,10 +100,9 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
 
   @impl true
   def handle_info(
-        {ConnectionsMultiplayerWeb.Presence, {:join, %{id: presence_id}} = dat},
+        {ConnectionsMultiplayerWeb.Presence, {:join, %{id: presence_id}}},
         %{active_players: active_players} = state
       ) do
-    dbg(dat)
     new_state = %{state | active_players: MapSet.put(active_players, presence_id)}
 
     PubSub.broadcast(
@@ -117,11 +116,9 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
 
   @impl true
   def handle_info(
-        {ConnectionsMultiplayerWeb.Presence, {:leave, %{id: presence_id, metas: metas}} = dat},
+        {ConnectionsMultiplayerWeb.Presence, {:leave, %{id: presence_id, metas: metas}}},
         %{active_players: active_players} = state
       ) do
-    dbg(dat)
-
     if metas == [] do
       new_state = %{state | active_players: MapSet.delete(active_players, presence_id)}
 

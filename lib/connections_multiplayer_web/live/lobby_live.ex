@@ -18,6 +18,11 @@ defmodule ConnectionsMultiplayerWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("new-game", _params, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/#{random_game_id()}")}
+  end
+
+  @impl true
   def handle_info(
         {ConnectionsMultiplayerWeb.GameRegistry, {:new_active_games_count, active_games_count}},
         socket
@@ -57,5 +62,9 @@ defmodule ConnectionsMultiplayerWeb.LobbyLive do
       </div>
     </div>
     """
+  end
+
+  defp random_game_id() do
+    MnemonicSlugs.generate_slug(3)
   end
 end

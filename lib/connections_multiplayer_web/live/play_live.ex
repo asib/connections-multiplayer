@@ -104,24 +104,22 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   # These aren't actually used anywhere, but we need to
   # list them somewhere in the source code for Tailwind
   # to generate the CSS: https://elixirforum.com/t/using-generated-class-names-in-tailwind-under-phoenix-1-7/57995/2
-  @border_colours ~w(
-      border-slate-600
-      border-red-900
-      border-orange-700
-      border-amber-600
-      border-lime-600
-      border-green-800
-      border-teal-600
-      border-cyan-600
-      border-sky-700
-      border-blue-600
-      border-indigo-600
-      border-violet-700
-      border-purple-600
-      border-fuchsia-700
-      border-pink-500
-      border-rose-700
-    )
+  # border-slate-600
+  # border-red-900
+  # border-orange-700
+  # border-amber-600
+  # border-lime-600
+  # border-green-800
+  # border-teal-600
+  # border-cyan-600
+  # border-sky-700
+  # border-blue-600
+  # border-indigo-600
+  # border-violet-700
+  # border-purple-600
+  # border-fuchsia-700
+  # border-pink-500
+  # border-rose-700
 
   @impl true
   def mount(_params, _session, socket) do

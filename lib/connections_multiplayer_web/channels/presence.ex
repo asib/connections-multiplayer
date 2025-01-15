@@ -54,12 +54,13 @@ defmodule ConnectionsMultiplayerWeb.Presence do
   def list_online_users(),
     do: list("online_users") |> Enum.map(fn {_id, presence} -> presence end)
 
-  def track_user(name, params), do: track(self(), "online_users", name, params)
+  def track_user(game_id, name, params),
+    do: track(self(), "#{game_id}:online_users", name, params)
 
-  def subscribe(),
+  def subscribe(game_id),
     do:
       Phoenix.PubSub.subscribe(
         ConnectionsMultiplayer.PubSub,
-        "game_room_channel_proxy:online_users"
+        "game_room_channel_proxy:#{game_id}:online_users"
       )
 end

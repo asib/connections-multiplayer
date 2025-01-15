@@ -13,6 +13,7 @@ defmodule ConnectionsMultiplayerWeb.Router do
   scope "/", ConnectionsMultiplayerWeb do
     pipe_through :browser
 
-    live "/", PlayLive
+    live "/", LobbyLive
+    live "/:game_id", PlayLive
   end
 end

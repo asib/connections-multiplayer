@@ -6,8 +6,6 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   alias ConnectionsMultiplayerWeb.Presence
   alias Phoenix.LiveView.AsyncResult
 
-  @game_id "hardcoded-game-id"
-
   @avatars [
     "Duck",
     "Rabbit",
@@ -122,10 +120,11 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   # border-rose-700
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(%{"game_id" => game_id}, _session, socket) do
     socket =
       socket
       |> stream(:presences, [])
+      |> assign(:game_id, game_id)
       |> assign_new(
         :avatar,
         fn -> "#{Enum.random(@avatars)}-#{:rand.uniform(999_999_999_999)}" end
@@ -133,19 +132,19 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> assign_new(:colour, fn -> Enum.random(@colours) end)
       |> assign_async(
         [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
-        fn -> load_game(@game_id) end
+        fn -> load_game(game_id) end
       )
 
     socket =
       if connected?(socket) do
-        GameRegistry.subscribe(@game_id)
+        GameRegistry.subscribe(socket.assigns.game_id)
 
-        Presence.track_user(socket.assigns.avatar, %{
+        Presence.track_user(socket.assigns.game_id, socket.assigns.avatar, %{
           id: socket.assigns.avatar,
           colour: socket.assigns.colour
         })
 
-        Presence.subscribe()
+        Presence.subscribe(socket.assigns.game_id)
 
         stream(socket, :presences, Presence.list_online_users())
       else
@@ -157,27 +156,36 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def handle_event("toggle_card", %{"card" => card}, socket) do
-    :ok = GameRegistry.toggle_card(@game_id, card, socket.assigns.avatar, socket.assigns.colour)
+    :ok =
+      GameRegistry.toggle_card(
+        socket.assigns.game_id,
+        card,
+        socket.assigns.avatar,
+        socket.assigns.colour
+      )
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("hint", _params, socket) do
-    :ok = GameRegistry.hint(@game_id)
+    :ok = GameRegistry.hint(socket.assigns.game_id)
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("deselect_all", _params, socket) do
-    :ok = GameRegistry.deselect_all_cards(@game_id)
+    :ok = GameRegistry.deselect_all_cards(socket.assigns.game_id)
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("change_puzzle_date", %{"date" => new_date}, socket) do
+    # Create variable to avoid passing entire socket into the start_async() closure below
+    game_id = socket.assigns.game_id
+
     socket =
       socket
       |> update(:puzzle_date, fn puzzle_date ->
@@ -194,7 +202,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
         AsyncResult.loading(category_difficulties)
       end)
       |> start_async(:change_puzzle_date_task, fn ->
-        GameRegistry.change_puzzle_date(@game_id, Date.from_iso8601!(new_date))
+        GameRegistry.change_puzzle_date(game_id, Date.from_iso8601!(new_date))
       end)
 
     {:noreply, socket}
@@ -202,7 +210,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def handle_event("submit", _params, socket) do
-    :ok = GameRegistry.submit(@game_id)
+    :ok = GameRegistry.submit(socket.assigns.game_id)
 
     {:noreply, socket}
   end

@@ -5,22 +5,33 @@
         <img src={~p"/images/logo.svg"} width="36" />
       </a>
     </div>
-    <div class="flex items-center gap-4 font-semibold leading-6 text-zinc-900">
+    <div class="flex items-center gap-3 font-semibold leading-6 text-zinc-900">
       <a href="https://github.com/asib/connections-multiplayer" class="hover:text-zinc-700">
-        <svg height="32" aria-hidden="true" viewBox="0 0 24 24" version="1.1" width="32" data-view-component="true"
+        <svg aria-hidden="true" viewBox="0 0 24 24" version="1.1" class="size-6 sm:size-8"
           class="octicon octicon-mark-github v-align-middle">
           <path
             d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.834 1.769 1.179 1.035 1.74 2.688 1.25 3.349.948.1-.747.402-1.25.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.977 0 1.955.13 2.875.388 2.2-1.495 3.162-1.179 3.162-1.179.633 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.162 0 .302.216.662.79.547C20.709 21.637 24 17.324 24 12.25 24 5.896 18.854.75 12.5.75Z">
           </path>
         </svg>
       </a>
-      <a href="https://hexdocs.pm/phoenix/overview.html" class="rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80">
-        Get Started <span aria-hidden="true">&rarr;</span>
+      <a href="https://hexdocs.pm/phoenix/overview.html"
+        class="inline-flex justify-center gap-3 sm:hover:gap-2 ease-out duration-200 transition-all transform-gpu rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80 group/btn">
+        Share game link
+        <div class="flex items-center opacity-50 sm:group-hover/btn:opacity-100 transition-opacity">
+          <svg role="img" viewBox="0 0 16 16" width="0" height="10" fill="currentColor"
+            class="w-0 sm:group-hover/btn:w-[0.7em] h-[0.7em] -mr-[0.7em] ease-out duration-200 transition-all transform-gpu">
+            <path d="M1 9h14a1 1 0 000-2H1a1 1 0 000 2z" />
+          </svg>
+          <svg role="img" viewBox="0 0 16 16" width="10" height="10" fill="currentColor" class="size-[0.7em]">
+            <path
+              d="M7.293 1.707L13.586 8l-6.293 6.293a1 1 0 001.414 1.414l7-7a.999.999 0 000-1.414l-7-7a1 1 0 00-1.414 1.414z" />
+          </svg>
+        </div>
       </a>
     </div>
   </div>
 </header>
-<main class="px-1 py-2 sm:px-4 sm:py-20 md:px-6 lg:px-8 h-full">
+<main class="px-1 py-2 sm:px-4 sm:py-6 md:px-6 lg:px-8 h-full">
   <div class="mx-auto max-w-2xl h-full">
     <.flash_group flash={@flash} />
     {@inner_content}

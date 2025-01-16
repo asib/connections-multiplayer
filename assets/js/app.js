@@ -151,6 +151,32 @@ Hooks.TooltipHook = {
   },
 }
 
+
+Hooks.ShareButton = {
+  mounted() {
+    const shareData = {
+      url: window.location.href,
+    }
+
+    this.el.addEventListener("click", async () => {
+      if (typeof navigator.share === "function" && window.matchMedia('(max-device-width: 768px)').matches) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(shareData.url).catch((e) => console.error(e))
+
+        const preClickContent = document.querySelector("#share-game-link-button-pre-click-content");
+        const postClickContent = document.querySelector("#share-game-link-button-post-click-content");
+
+        preClickContent.classList.add("hidden")
+        preClickContent.classList.remove("inline-flex")
+
+        postClickContent.classList.remove("hidden")
+        postClickContent.classList.add("inline-flex")
+      }
+    });
+  }
+}
+
 Hooks.Avatar = {
   mounted() {
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

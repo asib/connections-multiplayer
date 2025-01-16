@@ -42,23 +42,26 @@ defmodule ConnectionsMultiplayerWeb.LobbyLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col flex-wrap items-center justify-center content-center lg:grid lg:grid-rows-[1fr,min-content,1fr] h-full rounded-lg mx-auto bg-[rgb(179,167,254)] p-4 mx-4">
-      <h1 class="text-4xl font-[Charter] text-center pb-8 self-end">
-        Connections Multiplayer
-      </h1>
+    <div class="flex flex-col items-center justify-center h-full w-full">
+      <div class="flex flex-col flex-wrap items-center justify-center content-center lg:grid lg:grid-rows-[1fr,min-content,1fr] h-[calc(100%-26vh)] lg:h-[calc(100%-34vh)] w-full rounded-lg bg-[rgb(179,167,254)] p-4 mx-4">
+        <h1 class="text-2xl md:text-3xl font-[Charter] text-center pb-8 lg:self-end">
+          Connections Multiplayer
+        </h1>
 
-      <div class="flex flex-col justify-center items-center">
-        <button
-          class="bg-black text-white rounded-full py-2 px-4 sm:py-4 sm:px-6 text-center"
-          phx-click="new-game"
-        >
-          New Game
-        </button>
-        <p class="pt-4 text-center">
-          <span class="font-bold">{@active_games_count}</span>
-          games are currently being played with <span class="font-bold">{@active_players_count}</span>
-          players online.
-        </p>
+        <div class="flex flex-col justify-center items-center">
+          <button
+            class="bg-black text-white rounded-full py-2 px-4 sm:py-4 sm:px-6 text-center"
+            phx-click="new-game"
+          >
+            New Game
+          </button>
+          <p class="pt-4 text-center">
+            <span class="font-bold">{@active_games_count}</span>
+            games are currently being played with
+            <span class="font-bold">{@active_players_count}</span>
+            players online.
+          </p>
+        </div>
       </div>
     </div>
     """

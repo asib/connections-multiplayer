@@ -56,7 +56,8 @@ defmodule ConnectionsMultiplayer.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:req, "~> 0.5.0"},
-      {:mnemonic_slugs, "~> 0.0.3"}
+      {:mnemonic_slugs, "~> 0.0.3"},
+      {:memento, "~> 0.5.0"}
     ]
   end
 

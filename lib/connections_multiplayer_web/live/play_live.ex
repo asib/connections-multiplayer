@@ -311,7 +311,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   defp load_game(game_id) do
     with {:ok, game_state} <- GameRegistry.load(game_id) do
-      {:ok, game_state_to_map(game_state)}
+      {:ok, game_state_to_map(dbg(game_state))}
     end
   end
 

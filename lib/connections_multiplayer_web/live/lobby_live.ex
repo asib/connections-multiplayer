@@ -56,7 +56,12 @@ defmodule ConnectionsMultiplayerWeb.LobbyLive do
             New Game
           </button>
           <p class="pt-4 text-center">
-            <span class="font-bold">{@active_games_count}</span>
+            <span class="font-bold">
+              {case @active_games_count do
+                {:error, :could_not_get_active_games_count} -> "0"
+                count -> count
+              end}
+            </span>
             games are currently being played with
             <span class="font-bold">{@active_players_count}</span>
             players online.

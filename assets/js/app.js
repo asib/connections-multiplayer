@@ -111,6 +111,10 @@ class Tooltip {
         this.$parent.removeEventListener(event, callback)
       );
     });
+
+    if (this.$parent.matches(':hover')) {
+      this.show();
+    }
   }
 
   // The show method adds the data-show attribute to the tooltip element,
@@ -231,6 +235,46 @@ Hooks.CardButton = {
 
     resizeObserver.observe(el);
     mutationObserver.observe(el, { childList: true });
+
+    const tooltip = this.el.querySelector('[role="tooltip"]');
+    const button = this.el;
+
+    function updateCardSelection(isSelected, colour, avatar) {
+      const borderColour = colour !== null ? colour.replace("bg-", "border-") : null;
+      if (isSelected) {
+        button.classList.add("border-4", "p-1", borderColour);
+        button.classList.remove("p-2");
+
+        if (tooltip) {
+          tooltip.classList.add(borderColour);
+          tooltip.classList.remove("opacity-0");
+          tooltip.tooltip.show();
+          tooltip.innerHTML = `Anonymous ${avatar.split("-")[0]} (You)`;
+        }
+      } else {
+        const borderClasses = Array.from(button.classList).filter(cls => cls.startsWith('border-'));
+        button.classList.remove("p-1", ...borderClasses);
+        button.classList.add("p-2");
+
+        if (tooltip) {
+          tooltip.classList.remove(borderColour);
+          tooltip.classList.add("opacity-0");
+          tooltip.tooltip?.hide();
+        }
+      }
+    }
+
+    this.el.addEventListener("toggle_card", ({ detail: { avatar, colour } }) => {
+      const isSelected = this.el.dataset.selected !== "true";
+
+      if (!isSelected || (isSelected && document.querySelectorAll(`button[data-selected="true"]`).length < 4)) {
+        updateCardSelection(isSelected, colour, avatar);
+      }
+    });
+
+    this.handleEvent(`update-card-${this.el.id}`, ({ selected, colour, avatar }) => {
+      updateCardSelection(selected, colour, avatar);
+    });
 
     this.handleEvent(`animate-hint-${this.el.id}`, () => {
       gsap.fromTo(this.el, { rotate: 15 }, { rotation: 0, ease: "elastic.out(1.2,0.1)", duration: 2 })

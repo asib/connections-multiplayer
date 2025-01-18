@@ -223,6 +223,15 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> game_state_to_map()
       |> then(&assign_game_state(socket, &1))
       |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
+      |> then(
+        &Enum.reduce(new_state.cards, &1, fn {card, card_info}, socket ->
+          push_event(socket, "update-card-#{card}", %{
+            selected: card_info.selected,
+            avatar: Map.get(card_info, :avatar),
+            colour: Map.get(card_info, :colour)
+          })
+        end)
+      )
 
     {:noreply, socket}
   end
@@ -235,6 +244,15 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> then(&assign_game_state(socket, &1))
       |> put_flash(flash_kind, message)
       |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
+      |> then(
+        &Enum.reduce(new_state.cards, &1, fn {card, card_info}, socket ->
+          push_event(socket, "update-card-#{card}", %{
+            selected: card_info.selected,
+            avatar: Map.get(card_info, :avatar),
+            colour: Map.get(card_info, :colour)
+          })
+        end)
+      )
 
     {:noreply, socket}
   end
@@ -365,9 +383,10 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     end
   end
 
+  defp border_colour_from_bg_colour(nil), do: nil
+
   defp border_colour_from_bg_colour(colour) do
-    colour = String.replace_prefix(colour, "bg-", "")
-    "border-#{colour}"
+    String.replace_prefix(colour, "bg-", "border-")
   end
 
   defp card_button_class(params) do
@@ -395,6 +414,8 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   defp hintable(cards) do
     !cards.ok? || is_nil(cards.result) || map_size(cards.result) > 4
   end
+
+  defp avatar_name(nil), do: nil
 
   defp avatar_name(id) do
     [name, _] = String.split(id, "-")

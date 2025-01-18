@@ -223,7 +223,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> game_state_to_map()
       |> then(&assign_game_state(socket, &1))
       |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
-      |> push_card_updates_to_client(new_state.cards, socket.assigns.cards.result)
+      |> push_card_updates_to_client(new_state.cards)
 
     {:noreply, socket}
   end
@@ -236,7 +236,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> then(&assign_game_state(socket, &1))
       |> put_flash(flash_kind, message)
       |> maybe_fire_confetti(socket.assigns.found_categories.result, new_state.found_categories)
-      |> push_card_updates_to_client(new_state.cards, socket.assigns.cards.result)
+      |> push_card_updates_to_client(new_state.cards)
 
     {:noreply, socket}
   end
@@ -283,19 +283,13 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
     {:noreply, socket}
   end
 
-  defp push_card_updates_to_client(socket, new_cards, old_cards) do
-    Enum.reduce(new_cards, socket, fn {card, new_card_info}, socket ->
-      old_card_info = Map.get(old_cards, card)
-
-      if old_card_info != new_card_info do
-        push_event(socket, "update-card-#{card}", %{
-          selected: new_card_info.selected,
-          avatar: Map.get(new_card_info, :avatar),
-          colour: Map.get(new_card_info, :colour)
-        })
-      else
-        socket
-      end
+  defp push_card_updates_to_client(socket, cards) do
+    Enum.reduce(cards, socket, fn {card, card_info}, socket ->
+      push_event(socket, "update-card-#{card}", %{
+        selected: card_info.selected,
+        avatar: Map.get(card_info, :avatar),
+        colour: Map.get(card_info, :colour)
+      })
     end)
   end
 

@@ -6,12 +6,16 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
   alias ConnectionsMultiplayerWeb.GameRegistry.Game, as: GameTable
   alias ConnectionsMultiplayerWeb.Presence
 
+  require Logger
+
   @registry_pubsub_topic "game_registry:updates"
 
   @impl true
   def init(_) do
     case Node.list() do
       [] ->
+        Logger.debug("No nodes found, creating game table on local node")
+
         with :ok <- Memento.Table.create(GameTable, ram_copies: [node() | Node.list()]),
              {:ok, active_players} <- calculate_active_players() do
           {:ok, %{active_players: active_players}}
@@ -21,8 +25,9 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
         end
 
       _ ->
-        with {:ok, _} <- Memento.add_nodes([node() | Node.list()]),
-             :ok <- Memento.Schema.set_storage_type(node(), :ram_copies),
+        Logger.debug("Nodes found, creating game table on remote nodes")
+
+        with {:ok, _} <- Memento.add_nodes([node()]),
              :ok <- Memento.Table.create_copy(GameTable, node(), :ram_copies),
              {:ok, active_players} <- calculate_active_players() do
           {:ok, %{active_players: active_players}}

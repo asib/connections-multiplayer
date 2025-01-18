@@ -10,13 +10,11 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
 
   @impl true
   def init(_) do
-    Memento.Table.create(GameTable)
-
-    case calculate_active_players() do
-      {:ok, active_players} ->
-        {:ok, %{active_players: active_players}}
-
-      {:error, :could_not_calculate_active_players} ->
+    with :ok <- Memento.Table.create(GameTable, ram_copies: [node() | Node.list()]),
+         {:ok, active_players} <- calculate_active_players() do
+      {:ok, %{active_players: active_players}}
+    else
+      _ ->
         {:stop, {:error, :could_not_calculate_active_players}}
     end
   end

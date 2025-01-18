@@ -47,8 +47,8 @@
             phx-value-card={card}
             class={card_button_class(params)}
             phx-hook="CardButton">
-            <.tooltip :if={params.selected} class={["px-4 py-2 font-medium text-black bg-card border-2 rounded-md",
-                border_colour_from_bg_colour(params[:colour])]}>
+            <.tooltip class={["px-4 py-2 font-medium text-black bg-card border-2 rounded-md",
+                border_colour_from_bg_colour(params[:colour]), !params.selected && "opacity-0" ]}>
                 Anonymous {avatar_name(params[:avatar])} {if(params[:avatar] == @avatar, do: "(You)")}
             </.tooltip>
             <p id={"card-button-text-#{card}"} class="w-full h-full flex flex-wrap content-center justify-center">{card}

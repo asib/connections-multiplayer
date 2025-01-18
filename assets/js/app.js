@@ -247,6 +247,7 @@ Hooks.CardButton = {
 
         if (tooltip) {
           tooltip.classList.add(borderColour);
+          tooltip.classList.remove("opacity-0");
           tooltip.tooltip.show();
           tooltip.innerHTML = `Anonymous ${avatar.split("-")[0]} (You)`;
         }
@@ -256,6 +257,8 @@ Hooks.CardButton = {
         button.classList.add("p-2");
 
         if (tooltip) {
+          tooltip.classList.remove(borderColour);
+          tooltip.classList.add("opacity-0");
           tooltip.tooltip?.hide();
         }
       }

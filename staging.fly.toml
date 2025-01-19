@@ -1,0 +1,39 @@
+# fly.toml app configuration file generated for connections-multiplayer-staging on 2025-01-18T13:32:39-06:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'connections-multiplayer-staging'
+primary_region = 'sjc'
+kill_signal = 'SIGTERM'
+
+[build]
+
+[env]
+  DATABASE_PATH = '/mnt/name/name.db'
+  PHX_HOST = 'connections-multiplayer-staging.fly.dev'
+  PORT = '8080'
+
+[[mounts]]
+  source = 'name'
+  destination = '/mnt/name'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 1000
+    soft_limit = 1000
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[[restart]]
+  policy = 'on-failure'
+  retries = 1

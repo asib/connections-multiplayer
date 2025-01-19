@@ -264,13 +264,40 @@ Hooks.CardButton = {
       }
     }
 
-    this.el.addEventListener("toggle_card", ({ detail: { avatar, colour } }) => {
-      const isSelected = this.el.dataset.selected !== "true";
+    this.longPressTimer = null;
+    this.isLongPress = false;
+    const longPressTime = 500;
 
-      if (!isSelected || (isSelected && document.querySelectorAll(`button[data-selected="true"]`).length < 4)) {
-        updateCardSelection(isSelected, colour, avatar);
+    this.el.addEventListener("mousedown", (e) => {
+      this.isLongPress = false;
+      this.longPressTimer = setTimeout(() => {
+        this.isLongPress = true;
+        handleCardClick(true);
+      }, longPressTime);
+    });
+
+    this.el.addEventListener("mouseup", () => {
+      clearTimeout(this.longPressTimer);
+      if (!this.isLongPress) {
+        handleCardClick(false);
       }
     });
+
+    this.el.addEventListener("mouseleave", () => {
+      clearTimeout(this.longPressTimer);
+    });
+
+    const handleCardClick = (isLongPress) => {
+      const isCurrentlySelected = this.el.dataset.selected === "true";
+      const selectedCards = document.querySelectorAll('button[data-selected="true"]');
+      const cardWasSelectedByThisUser = this.el.dataset.selectedByAvatar === this.el.dataset.userAvatar;
+
+      if ((isCurrentlySelected && (isLongPress || cardWasSelectedByThisUser))
+        || (!isCurrentlySelected && selectedCards.length < 4)) {
+        updateCardSelection(!isCurrentlySelected, this.el.dataset.userColour, this.el.dataset.userAvatar);
+        this.pushEvent("toggle_card", { card: this.el.id, is_long_press: isLongPress });
+      }
+    };
 
     this.handleEvent(`update-card-${this.el.id}`, ({ selected, colour, avatar }) => {
       updateCardSelection(selected, colour, avatar);

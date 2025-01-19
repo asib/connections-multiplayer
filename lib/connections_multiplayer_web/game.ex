@@ -14,8 +14,8 @@ defmodule ConnectionsMultiplayerWeb.Game do
     GenServer.call(pid, :load)
   end
 
-  def toggle_card(pid, game_id, card, avatar, colour) do
-    GenServer.call(pid, {:toggle_card, game_id, card, avatar, colour})
+  def toggle_card(pid, game_id, card, avatar, colour, is_long_press) do
+    GenServer.call(pid, {:toggle_card, game_id, card, avatar, colour, is_long_press})
   end
 
   def deselect_all_cards(pid, game_id) do
@@ -49,7 +49,7 @@ defmodule ConnectionsMultiplayerWeb.Game do
 
   @impl true
   def handle_call(
-        {:toggle_card, game_id, card, avatar, colour},
+        {:toggle_card, game_id, card, avatar, colour, is_long_press},
         _from,
         %__MODULE__{cards: cards} = state
       ) do
@@ -58,7 +58,7 @@ defmodule ConnectionsMultiplayerWeb.Game do
     new_cards =
       Map.update!(cards, card, fn %{selected: selected} = card_info ->
         if num_already_selected < 4 || selected do
-          if selected do
+          if selected && (avatar == card_info.avatar || is_long_press) do
             %{card_info | selected: !selected} |> Map.drop([:avatar, :colour])
           else
             %{card_info | selected: !selected}

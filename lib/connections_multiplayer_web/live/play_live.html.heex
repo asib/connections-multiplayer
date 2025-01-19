@@ -40,13 +40,9 @@
             </button>
         </:loading>
         <:failed>Failed to fetch cards, retry...</:failed>
-        <button phx-no-format :for={{card, params} <- cards_in_order(cards)} id={card}
-            phx-click={JS.dispatch("toggle_card", detail: %{avatar: @avatar, colour: @colour}) |> JS.push("toggle_card",
-            value: %{card: card})}
-            data-selected={params.selected && "true" || "false"}
-            phx-value-card={card}
-            class={card_button_class(params)}
-            phx-hook="CardButton">
+        <button phx-no-format :for={{card, params} <- cards_in_order(cards)} id={card} data-user-avatar={@avatar}
+            data-user-colour={@colour} data-selected-by-avatar={params[:avatar]} data-selected={params.selected
+            && "true" || "false" } class={card_button_class(params)} phx-hook="CardButton">
             <.tooltip class={["px-4 py-2 font-medium text-black bg-card border-2 rounded-md",
                 border_colour_from_bg_colour(params[:colour]), !params.selected && "opacity-0" ]}>
                 Anonymous {avatar_name(params[:avatar])} {if(params[:avatar] == @avatar, do: "(You)")}

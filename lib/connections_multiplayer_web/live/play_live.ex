@@ -156,13 +156,14 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   @impl true
-  def handle_event("toggle_card", %{"card" => card}, socket) do
+  def handle_event("toggle_card", %{"card" => card, "is_long_press" => is_long_press}, socket) do
     :ok =
       GameRegistry.toggle_card(
         socket.assigns.game_id,
         card,
         socket.assigns.avatar,
-        socket.assigns.colour
+        socket.assigns.colour,
+        is_long_press
       )
 
     {:noreply, socket}

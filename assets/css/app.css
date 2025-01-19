@@ -8,7 +8,7 @@
         font-style: normal;
         font-weight: normal;
         font-stretch: normal;
-        src: url('fonts/charter_regular.woff2') format('woff2');
+        src: url('/fonts/charter_regular.woff2') format('woff2');
     }
 
     @font-face {
@@ -16,7 +16,7 @@
         font-style: italic;
         font-weight: normal;
         font-stretch: normal;
-        src: url('fonts/charter_italic.woff2') format('woff2');
+        src: url('/fonts/charter_italic.woff2') format('woff2');
     }
 
     @font-face {
@@ -24,7 +24,7 @@
         font-style: normal;
         font-weight: bold;
         font-stretch: normal;
-        src: url('fonts/charter_bold.woff2') format('woff2');
+        src: url('/fonts/charter_bold.woff2') format('woff2');
     }
 
     @font-face {
@@ -32,7 +32,7 @@
         font-style: italic;
         font-weight: bold;
         font-stretch: normal;
-        src: url('fonts/charter_bold_italic.woff2') format('woff2');
+        src: url('/fonts/charter_bold_italic.woff2') format('woff2');
     }
 
     div[data-phx-main] {

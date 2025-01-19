@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-// import "./user_socket.js"
+import { mutationObserver, setupSocket } from "./user_socket.js"
 
 // You can include dependencies in two ways.
 //
@@ -187,7 +187,7 @@ Hooks.Avatar = {
       const el = document.querySelector(`#${this.el.id}>div`)
 
       const tl = gsap.timeline({ paused: true, defaults: { ease: "power1.out" } });
-      tl.to(el, { scale: 1.1, duration: 0.3, onComplete: () => console.log("scaled") })
+      tl.to(el, { scale: 1.1, duration: 0.3 })
       tl.add("afterScale")
       tl.to(el, { rotation: 25, duration: 0.5 })
       tl.to(el, { rotation: -25, duration: 1 })
@@ -212,10 +212,12 @@ Hooks.Avatar = {
 Hooks.CardButton = {
   mounted() {
     function fitText(el) {
-      textFit(el, { maxFontSize: 16, multiLine: true })
+      try {
+        textFit(el, { maxFontSize: 16, multiLine: true })
+      } catch (e) { }
     }
 
-    const el = this.el.querySelector(`#card-button-text-${this.el.id}`)
+    const el = this.el.querySelector(`#card-button-text-${this.el.id.replace(" ", "-")}`)
 
     fitText(el);
 
@@ -312,6 +314,13 @@ Hooks.CardButton = {
     this.handleEvent(`animate-hint-${this.el.id}`, () => {
       gsap.fromTo(this.el, { rotate: 15 }, { rotation: 0, ease: "elastic.out(1.2,0.1)", duration: 2 })
     });
+  }
+}
+
+Hooks.PresenceTrigger = {
+  mounted() {
+    setupSocket();
+    mutationObserver.observe(this.el, { attributes: true });
   }
 }
 

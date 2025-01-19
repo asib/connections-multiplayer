@@ -119,6 +119,7 @@ defmodule ConnectionsMultiplayerWeb.Hooks.InitAssigns do
     socket =
       socket
       |> assign_new(:is_game_page?, fn -> false end)
+      |> attach_hook(:save_request_path, :handle_params, &save_request_path/3)
 
     socket =
       if connected?(socket) do
@@ -133,4 +134,7 @@ defmodule ConnectionsMultiplayerWeb.Hooks.InitAssigns do
 
     {:cont, socket}
   end
+
+  defp save_request_path(_params, url, socket),
+    do: {:cont, assign(socket, :current_uri_path, URI.parse(url).path)}
 end

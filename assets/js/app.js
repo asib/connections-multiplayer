@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-import "./user_socket.js"
+import { mutationObserver, setupSocket } from "./user_socket.js"
 
 // You can include dependencies in two ways.
 //
@@ -314,6 +314,13 @@ Hooks.CardButton = {
     this.handleEvent(`animate-hint-${this.el.id}`, () => {
       gsap.fromTo(this.el, { rotate: 15 }, { rotation: 0, ease: "elastic.out(1.2,0.1)", duration: 2 })
     });
+  }
+}
+
+Hooks.PresenceTrigger = {
+  mounted() {
+    setupSocket();
+    mutationObserver.observe(this.el, { attributes: true });
   }
 }
 

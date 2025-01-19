@@ -5,19 +5,27 @@
 import { Socket } from "phoenix"
 
 let socket, channel;
+let avatar, colour, gameId;
 
 function connectAndJoinChannel() {
   // And connect to the path in "lib/connections_multiplayer_web/endpoint.ex". We pass the
   // token for authentication. Read below how it should be used.
-  const avatar = document.querySelector("#user-avatar").value;
-  const colour = document.querySelector("#user-colour").value;
+  avatar = document.querySelector("#user-avatar").value;
+  colour = document.querySelector("#user-colour").value;
+  gameId = window.location.pathname.split('/').pop();
 
-  if (avatar === undefined || avatar === null || avatar === "") {
+  if (avatar === undefined
+    || avatar === null
+    || avatar === ""
+    || gameId === undefined
+    || gameId === null
+    || gameId === "") {
     // We only set the avatar once the liveview socket has connected,
     // so if we're here before that happens, we don't have an avatar
     // with which to connect to the channel.
     // The mutation observer below will trigger when the avatar is set,
     // thereby triggering this function again with a defined avatar.
+    console.log("waiting for avatar or gameId", avatar, gameId)
     return;
   }
 
@@ -71,7 +79,6 @@ function connectAndJoinChannel() {
   // Now that you are connected, you can join channels with a topic.
   // Let's assume you have a channel with a topic named `room` and the
   // subtopic is its id - in this case 42:
-  const gameId = window.location.pathname.split('/').pop()
   let channel = socket.channel(`game:${gameId}:online_users`, {})
   channel.join()
     .receive("ok", resp => { console.log("Joined successfully", resp) })
@@ -79,6 +86,12 @@ function connectAndJoinChannel() {
 }
 
 function setupSocket() {
+  if (avatar == document.querySelector("#user-avatar").value
+    && colour == document.querySelector("#user-colour").value
+    && gameId == window.location.pathname.split('/').pop()) {
+    return;
+  }
+
   if (channel !== undefined) channel.leave()
 
   if (socket !== undefined) {
@@ -98,4 +111,4 @@ const mutationObserver = new MutationObserver((mutations) => {
 });
 mutationObserver.observe(document.querySelector("#user-avatar"), { attributes: true });
 
-export default socket
+export { mutationObserver, setupSocket };

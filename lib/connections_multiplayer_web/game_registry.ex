@@ -12,28 +12,38 @@ defmodule ConnectionsMultiplayerWeb.GameRegistry do
 
   @impl true
   def init(_) do
+    :timer.sleep(2000)
+
+    # Memento.Schema.create([node() | Node.list()])
+
     case Node.list() do
       [] ->
-        Logger.debug("No nodes found, creating game table on local node")
+        Logger.info("No nodes found, creating game table on local node")
 
         with :ok <- Memento.Table.create(GameTable, ram_copies: [node() | Node.list()]),
              {:ok, active_players} <- calculate_active_players() do
           {:ok, %{active_players: active_players}}
         else
-          _ ->
-            {:stop, {:error, :could_not_calculate_active_players}}
+          error ->
+            Logger.error("Could not create game table on local node: #{inspect(error)}")
+            {:stop, {:error, :could_not_create_game_table}}
         end
 
       _ ->
-        Logger.debug("Nodes found, creating game table on remote nodes")
+        Logger.info("Nodes found, creating game table on remote nodes",
+          node: node(),
+          ipv6: System.get_env("FLY_PRIVATE_IP")
+        )
 
         with {:ok, _} <- Memento.add_nodes([node()]),
+             :ok <- Memento.Schema.set_storage_type(node(), :ram_copies),
              :ok <- Memento.Table.create_copy(GameTable, node(), :ram_copies),
              {:ok, active_players} <- calculate_active_players() do
           {:ok, %{active_players: active_players}}
         else
-          _ ->
-            {:stop, {:error, :could_not_calculate_active_players}}
+          error ->
+            Logger.error("Could not create game table on remote nodes: #{inspect(error)}")
+            {:stop, {:error, :could_not_create_game_table}}
         end
     end
   end

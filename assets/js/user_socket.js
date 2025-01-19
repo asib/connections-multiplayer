@@ -25,7 +25,6 @@ function connectAndJoinChannel() {
     // with which to connect to the channel.
     // The mutation observer below will trigger when the avatar is set,
     // thereby triggering this function again with a defined avatar.
-    console.log("waiting for avatar or gameId", avatar, gameId)
     return;
   }
 
@@ -105,7 +104,6 @@ setupSocket();
 
 const mutationObserver = new MutationObserver((mutations) => {
   for (const _mutation of mutations) {
-    console.log(`MutationObserver triggered: ${_mutation.target.value}`)
     setupSocket();
   }
 });

@@ -212,10 +212,12 @@ Hooks.Avatar = {
 Hooks.CardButton = {
   mounted() {
     function fitText(el) {
-      textFit(el, { maxFontSize: 16, multiLine: true })
+      try {
+        textFit(el, { maxFontSize: 16, multiLine: true })
+      } catch (e) { }
     }
 
-    const el = this.el.querySelector(`#card-button-text-${this.el.id}`)
+    const el = this.el.querySelector(`#card-button-text-${this.el.id.replace(" ", "-")}`)
 
     fitText(el);
 

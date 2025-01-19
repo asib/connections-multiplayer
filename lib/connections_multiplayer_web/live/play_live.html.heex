@@ -48,7 +48,8 @@
                 border_colour_from_bg_colour(params[:colour]), !params.selected && "opacity-0" ]}>
                 Anonymous {avatar_name(params[:avatar])} {if(params[:avatar] == @avatar, do: "(You)")}
             </.tooltip>
-            <p id={"card-button-text-#{card}"} class="w-full h-full flex flex-wrap content-center justify-center">{card}
+            <p id={"card-button-text-#{String.replace(card, " " , "-" )}"}
+                class="w-full h-full flex flex-wrap content-center justify-center">{card}
             </p>
         </button>
     </.async_result>

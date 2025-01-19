@@ -49,3 +49,11 @@
     {@inner_content}
   </div>
 </main>
+
+<!-- 
+  We're using hidden inputs so that we can attach a mutation observer to
+  wait for the second mount. Trying to do this with variables like
+  `window.userAvatar` seemed more complicated.
+-->
+<input type="hidden" id="user-avatar" value={assigns[:avatar]} />
+<input type="hidden" id="user-colour" value={assigns[:colour]} />

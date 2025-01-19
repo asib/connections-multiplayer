@@ -58,3 +58,5 @@
 <input type="hidden" id="user-avatar" value={assigns[:avatar]} />
 <input type="hidden" id="user-colour" value={assigns[:colour]} />
 <input type="hidden" id="current-uri-path" value={@current_uri_path} phx-hook="PresenceTrigger" />
+
+<div id="phrase-trigger" aria-hidden="true" phx-hook="PhraseTrigger" class="hidden"></div>

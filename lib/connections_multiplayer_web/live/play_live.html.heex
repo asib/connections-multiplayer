@@ -14,7 +14,7 @@
     </li>
 </ul>
 
-<.async_result :let={puzzle_date} assign={@puzzle_date}>
+<.async_result :if={@show_date_picker?} :let={puzzle_date} assign={@puzzle_date}>
     <.async_result :let={puzzle_date_form} assign={@puzzle_date_form}>
         <.form for={puzzle_date_form} class="font-light font-serif pb-4" phx-change="change_puzzle_date">
             <.input type="date" field={puzzle_date_form[:date]} value={puzzle_date} />

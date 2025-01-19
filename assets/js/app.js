@@ -324,6 +324,25 @@ Hooks.PresenceTrigger = {
   }
 }
 
+Hooks.PhraseTrigger = {
+  mounted() {
+    const word = "gimmearchive";
+    let phrase = "";
+    window.addEventListener("keypress", (e) => {
+      phrase += e.key;
+      if (phrase.length > word.length) {
+        phrase = phrase.substring(1, word.length + 1);
+      }
+      console.log(phrase)
+      if (phrase === word) {
+        this.pushEvent("archive", {});
+      }
+    })
+
+  }
+}
+
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

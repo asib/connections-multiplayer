@@ -119,6 +119,7 @@ defmodule ConnectionsMultiplayerWeb.Hooks.InitAssigns do
     socket =
       socket
       |> assign_new(:is_game_page?, fn -> false end)
+      |> assign_new(:show_date_picker?, fn -> false end)
       |> attach_hook(:save_request_path, :handle_params, &save_request_path/3)
 
     socket =

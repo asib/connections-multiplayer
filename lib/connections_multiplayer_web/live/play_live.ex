@@ -97,6 +97,13 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   end
 
   @impl true
+  def handle_event("archive", _params, socket) do
+    socket = assign(socket, :show_date_picker?, true)
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info({:state_update, new_state}, socket) do
     socket =
       new_state

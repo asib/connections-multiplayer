@@ -1,4 +1,4 @@
-<ul id="online_users" phx-update="stream" class="flex">
+<ul id="online_users" phx-update="stream" class="flex mb-4">
     <li :for={{dom_id, %{id: id, metas: [meta | _]}} <- @streams.presences} id={dom_id}
         class="size-12 sm:size-[4rem] mr-2" aria-label={"Anonymous #{avatar_name(id)}"} phx-hook="Avatar"
         data-avatar-id={id}>
@@ -6,7 +6,8 @@
             <img src={"/images/avatars/#{avatar_name(id)}.png"} alt={"Anonymous #{avatar_name(id)}"}
                 class="p-3 sm:p-4 w-full" />
         </div>
-        <.tooltip class="px-4 py-2 font-medium text-black bg-card border-2 border-card-selected rounded-md">
+        <.tooltip class={["px-4 py-2 font-medium text-black bg-card border-2 rounded-md",
+            border_colour_from_bg_colour(meta.colour)]}>
             Anonymous {avatar_name(id)} {if(id == @avatar, do: "(You)")}
         </.tooltip>
 
@@ -15,7 +16,7 @@
 
 <.async_result :let={puzzle_date} assign={@puzzle_date}>
     <.async_result :let={puzzle_date_form} assign={@puzzle_date_form}>
-        <.form for={puzzle_date_form} class="font-light font-serif py-4" phx-change="change_puzzle_date">
+        <.form for={puzzle_date_form} class="font-light font-serif pb-4" phx-change="change_puzzle_date">
             <.input type="date" field={puzzle_date_form[:date]} value={puzzle_date} />
         </.form>
     </.async_result>

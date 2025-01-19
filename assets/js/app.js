@@ -244,6 +244,9 @@ Hooks.CardButton = {
       if (isSelected) {
         button.classList.add("border-4", "p-1", borderColour);
         button.classList.remove("p-2");
+        button.ariaChecked = "true";
+        button.dataset.selected = "true";
+        button.dataset.selectedByAvatar = avatar;
 
         if (tooltip) {
           tooltip.classList.add(borderColour);
@@ -255,6 +258,9 @@ Hooks.CardButton = {
         const borderClasses = Array.from(button.classList).filter(cls => cls.startsWith('border-'));
         button.classList.remove("p-1", ...borderClasses);
         button.classList.add("p-2");
+        button.ariaChecked = "false";
+        button.dataset.selected = "false";
+        button.removeAttribute("data-selected-by-avatar");
 
         if (tooltip) {
           tooltip.classList.remove(borderColour);

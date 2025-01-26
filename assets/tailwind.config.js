@@ -16,6 +16,15 @@ module.exports = {
       colors: {
         "card": "#efefe6",
         "card-selected": "#5a594e",
+      },
+      keyframes: {
+        "slide-fade-in": {
+          '0%': { transform: 'translateY(-5%)', opacity: '0' },
+          '100%': { transform: '', opacity: '1' },
+        }
+      },
+      animation: {
+        "slide-fade-in": 'slide-fade-in 0.3s ease-in-out',
       }
     },
   },

@@ -1,122 +1,126 @@
-<header :if={@is_game_page?} class="px-4 sm:px-6 lg:px-8 border-b border-zinc-100 mb-4">
-  <div class="flex items-center justify-between py-3 text-sm">
-    <div class="flex items-center gap-4">
-      <a href="/">
-        <img src={~p"/images/logo.svg"} width="36" />
-      </a>
-    </div>
-    <div class="flex items-center gap-3 font-semibold leading-6 text-zinc-900">
-      <a href="https://github.com/asib/connections-multiplayer" class="hover:text-zinc-700">
-        <svg aria-hidden="true" viewBox="0 0 24 24" version="1.1" class="size-6 sm:size-8"
-          class="octicon octicon-mark-github v-align-middle">
-          <path
-            d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.834 1.769 1.179 1.035 1.74 2.688 1.25 3.349.948.1-.747.402-1.25.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.977 0 1.955.13 2.875.388 2.2-1.495 3.162-1.179 3.162-1.179.633 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.162 0 .302.216.662.79.547C20.709 21.637 24 17.324 24 12.25 24 5.896 18.854.75 12.5.75Z">
-          </path>
-        </svg>
-      </a>
+<div class="grid grid-rows-[min-content_1fr] h-full">
+  <div :if={!@is_game_page?} aria-hidden="true" class="h-0"></div>
+  <header :if={@is_game_page?} class="px-4 sm:px-6 lg:px-8 mb-4 border-b border-zinc-100">
+    <div class="flex items-center justify-between py-3 text-sm">
+      <div class="flex items-center gap-4">
+        <a href="/">
+          <img src={~p"/images/logo.svg"} width="36" />
+        </a>
+      </div>
+      <div class="flex items-center gap-3 font-semibold leading-6 text-zinc-900">
+        <a href="https://github.com/asib/connections-multiplayer" class="hover:text-zinc-700">
+          <svg aria-hidden="true" viewBox="0 0 24 24" version="1.1" class="size-6 sm:size-8"
+            class="octicon octicon-mark-github v-align-middle">
+            <path
+              d="M12.5.75C6.146.75 1 5.896 1 12.25c0 5.089 3.292 9.387 7.863 10.91.575.101.79-.244.79-.546 0-.273-.014-1.178-.014-2.142-2.889.532-3.636-.704-3.866-1.35-.13-.331-.69-1.352-1.18-1.625-.402-.216-.977-.748-.014-.762.906-.014 1.553.834 1.769 1.179 1.035 1.74 2.688 1.25 3.349.948.1-.747.402-1.25.733-1.538-2.559-.287-5.232-1.279-5.232-5.678 0-1.25.445-2.285 1.178-3.09-.115-.288-.517-1.467.115-3.048 0 0 .963-.302 3.163 1.179.92-.259 1.897-.388 2.875-.388.977 0 1.955.13 2.875.388 2.2-1.495 3.162-1.179 3.162-1.179.633 1.581.23 2.76.115 3.048.733.805 1.179 1.825 1.179 3.09 0 4.413-2.688 5.39-5.247 5.678.417.36.776 1.05.776 2.128 0 1.538-.014 2.774-.014 3.162 0 .302.216.662.79.547C20.709 21.637 24 17.324 24 12.25 24 5.896 18.854.75 12.5.75Z">
+            </path>
+          </svg>
+        </a>
 
-      <button id="help-button" phx-hook="HelpButton" aria-label="How to Play">
-        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" height="32" viewBox="0 0 32 32" width="32"
-          class="game-icon" data-testid="icon-help">
-          <path fill="var(--color-tone-1)"
-            d="M15 24H17.6667V21.3333H15V24ZM16.3333 2.66666C8.97333 2.66666 3 8.63999 3 16C3 23.36 8.97333 29.3333 16.3333 29.3333C23.6933 29.3333 29.6667 23.36 29.6667 16C29.6667 8.63999 23.6933 2.66666 16.3333 2.66666ZM16.3333 26.6667C10.4533 26.6667 5.66667 21.88 5.66667 16C5.66667 10.12 10.4533 5.33332 16.3333 5.33332C22.2133 5.33332 27 10.12 27 16C27 21.88 22.2133 26.6667 16.3333 26.6667ZM16.3333 7.99999C13.3867 7.99999 11 10.3867 11 13.3333H13.6667C13.6667 11.8667 14.8667 10.6667 16.3333 10.6667C17.8 10.6667 19 11.8667 19 13.3333C19 16 15 15.6667 15 20H17.6667C17.6667 17 21.6667 16.6667 21.6667 13.3333C21.6667 10.3867 19.28 7.99999 16.3333 7.99999Z">
-          </path>
-        </svg>
-      </button>
-      <dialog id="help-dialog"
-        class="min-w-[min(50vw,500px)] max-w-screen sm:max-w-[50vw] lg:max-w-[30vw] xl:max-w-[20vw] p-4 shadow-2xl drop-shadow-2xl font-normal backdrop:bg-black/30 backdrop:backdrop-blur-sm opacity-0 translate-y-[-5%] open:opacity-100 open:translate-y-0 open:animate-slide-fade-in"
-        phx-hook="HelpDialog">
-        <div class="w-full flex justify-end">
-          <button id="close-help-button" phx-hook="CloseHelpButton" aria-label="close">
-            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-              stroke-width="1.5" stroke="currentColor" class="size-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
+        <button id="help-button" phx-hook="HelpButton" aria-label="How to Play">
+          <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" height="32" viewBox="0 0 32 32" width="32"
+            class="game-icon" data-testid="icon-help">
+            <path fill="var(--color-tone-1)"
+              d="M15 24H17.6667V21.3333H15V24ZM16.3333 2.66666C8.97333 2.66666 3 8.63999 3 16C3 23.36 8.97333 29.3333 16.3333 29.3333C23.6933 29.3333 29.6667 23.36 29.6667 16C29.6667 8.63999 23.6933 2.66666 16.3333 2.66666ZM16.3333 26.6667C10.4533 26.6667 5.66667 21.88 5.66667 16C5.66667 10.12 10.4533 5.33332 16.3333 5.33332C22.2133 5.33332 27 10.12 27 16C27 21.88 22.2133 26.6667 16.3333 26.6667ZM16.3333 7.99999C13.3867 7.99999 11 10.3867 11 13.3333H13.6667C13.6667 11.8667 14.8667 10.6667 16.3333 10.6667C17.8 10.6667 19 11.8667 19 13.3333C19 16 15 15.6667 15 20H17.6667C17.6667 17 21.6667 16.6667 21.6667 13.3333C21.6667 10.3867 19.28 7.99999 16.3333 7.99999Z">
+            </path>
+          </svg>
+        </button>
+        <dialog id="help-dialog"
+          class="min-w-[min(50vw,500px)] max-w-screen sm:max-w-[50vw] lg:max-w-[30vw] xl:max-w-[20vw] p-4 shadow-2xl drop-shadow-2xl font-normal backdrop:bg-black/30 backdrop:backdrop-blur-sm opacity-0 translate-y-[-5%] open:opacity-100 open:translate-y-0 open:animate-slide-fade-in"
+          phx-hook="HelpDialog">
+          <div class="w-full flex justify-end">
+            <button id="close-help-button" phx-hook="CloseHelpButton" aria-label="close">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke-width="1.5" stroke="currentColor" class="size-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
 
-          </button>
-        </div>
-        <div class="px-6">
-          <h1 class="text-3xl mt-2 mb-4 font-[Charter]">How to Play</h1>
-          <ul class="list-disc">
-            <li>Find groups of 4 cards that are connected by a common theme, then tap <span
-                class="font-bold">Submit</span> to see if you've found a connection.</li>
-            <li>Each set of 16 cards has exactly one solution. Be careful of cards that seem to fit into multiple
-              categories.</li>
-            <li>Each of the four themes has a difficulty level, from easiest to hardest, represented by a colour:
-              <ul class="list-none relative">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 48" stroke-width="1.5"
-                  stroke="currentColor" class="w-8 h-12 absolute left-[30px] top-[30px]" aria-hidden="true">
-                  <!-- <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25 12 21m0 0-3.75-3.75M12 21V3" /> -->
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M 4 0 v 47 m 0 0 l -4 -4 m 4 4 l 4 -4" />
-                </svg>
+            </button>
+          </div>
+          <div class="px-6">
+            <h1 class="text-3xl mt-2 mb-4 font-[Charter]">How to Play</h1>
+            <ul class="list-disc">
+              <li>Find groups of 4 cards that are connected by a common theme, then tap <span
+                  class="font-bold">Submit</span> to see if you've found a connection.</li>
+              <li>Each set of 16 cards has exactly one solution. Be careful of cards that seem to fit into multiple
+                categories.</li>
+              <li>Each of the four themes has a difficulty level, from easiest to hardest, represented by a colour:
+                <ul class="list-none relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 48" stroke-width="1.5"
+                    stroke="currentColor" class="w-8 h-12 absolute left-[30px] top-[30px]" aria-hidden="true">
+                    <!-- <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25 12 21m0 0-3.75-3.75M12 21V3" /> -->
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M 4 0 v 47 m 0 0 l -4 -4 m 4 4 l 4 -4" />
+                  </svg>
 
-                <li class="flex gap-2 my-1" aria-label="Yellow: Easy">
-                  <span aria-hidden="true" class="block size-6 rounded bg-[#f9df6d]"></span> <span
-                    aria-hidden="true">Easy</span>
-                </li>
-                <li class="flex gap-2 my-1" aria-label="Green: Intermediate">
-                  <span aria-hidden="true" class="block size-6 rounded bg-[#a0c35a]"></span> <span aria-hidden="true"
-                    class="sr-only">Intermediate</span>
-                </li>
-                <li class="flex gap-2 my-1" aria-label="Blue: Difficult">
-                  <span aria-hidden="true" class="block size-6 rounded bg-[#b0c4ef]"></span> <span aria-hidden="true"
-                    class="sr-only">Difficult</span>
-                </li>
-                <li class="flex gap-2 my-1" aria-label="Purple: Hardest">
-                  <span aria-hidden="true" class="block size-6 rounded bg-[#ba81c5]"></span> <span
-                    aria-hidden="true">Hardest</span>
-                </li>
-              </ul>
-            </li>
-            <li>If you're stuck, tap <span class="font-bold">Hint</span>. The first hint will give you two cards in
-              the same theme, and the second will give you three.</li>
-          </ul>
-          <h2 class="text-xl mt-4 mb-2 font-[Charter]">Multiplayer</h2>
-          <ul class="list-disc">
-            <li>You can play with others by sharing a link to the game with them.</li>
-            <li>When multiple people are playing, you need to <span class="font-bold">long press</span> (click and hold
-              if on a laptop) to deselect a card that someone else selected. Deselecting a card you selected yourself
-              can be done with a normal tap (or normal click if on a laptop).</li>
-          </ul>
-        </div>
-      </dialog>
+                  <li class="flex gap-2 my-1" aria-label="Yellow: Easy">
+                    <span aria-hidden="true" class="block size-6 rounded bg-[#f9df6d]"></span> <span
+                      aria-hidden="true">Easy</span>
+                  </li>
+                  <li class="flex gap-2 my-1" aria-label="Green: Intermediate">
+                    <span aria-hidden="true" class="block size-6 rounded bg-[#a0c35a]"></span> <span aria-hidden="true"
+                      class="sr-only">Intermediate</span>
+                  </li>
+                  <li class="flex gap-2 my-1" aria-label="Blue: Difficult">
+                    <span aria-hidden="true" class="block size-6 rounded bg-[#b0c4ef]"></span> <span aria-hidden="true"
+                      class="sr-only">Difficult</span>
+                  </li>
+                  <li class="flex gap-2 my-1" aria-label="Purple: Hardest">
+                    <span aria-hidden="true" class="block size-6 rounded bg-[#ba81c5]"></span> <span
+                      aria-hidden="true">Hardest</span>
+                  </li>
+                </ul>
+              </li>
+              <li>If you're stuck, tap <span class="font-bold">Hint</span>. The first hint will give you two cards in
+                the same theme, and the second will give you three.</li>
+            </ul>
+            <h2 class="text-xl mt-4 mb-2 font-[Charter]">Multiplayer</h2>
+            <ul class="list-disc">
+              <li>You can play with others by sharing a link to the game with them.</li>
+              <li>When multiple people are playing, you need to <span class="font-bold">long press</span> (click and
+                hold
+                if on a laptop) to deselect a card that someone else selected. Deselecting a card you selected yourself
+                can be done with a normal tap (or normal click if on a laptop).</li>
+            </ul>
+          </div>
+        </dialog>
 
-      <button id="share-game-link-button" phx-hook="ShareButton">
-        <div id="share-game-link-button-pre-click-content"
-          class="inline-flex justify-center items-center gap-3 sm:hover:gap-2 ease-out duration-200 transition-all transform-gpu rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80 group/btn">
-          Share game link
-          <div id="share-game-link-button-arrow"
-            class="flex items-center opacity-50 sm:group-hover/btn:opacity-100 transition-opacity">
-            <svg role="img" viewBox="0 0 16 16" width="0" height="10" fill="currentColor"
-              class="w-0 sm:group-hover/btn:w-[0.7em] h-[0.7em] -mr-[0.7em] ease-out duration-200 transition-all transform-gpu">
-              <path d="M1 9h14a1 1 0 000-2H1a1 1 0 000 2z" />
-            </svg>
-            <svg role="img" viewBox="0 0 16 16" width="10" height="10" fill="currentColor" class="size-[0.7em]">
-              <path
-                d="M7.293 1.707L13.586 8l-6.293 6.293a1 1 0 001.414 1.414l7-7a.999.999 0 000-1.414l-7-7a1 1 0 00-1.414 1.414z" />
+        <button id="share-game-link-button" phx-hook="ShareButton">
+          <div id="share-game-link-button-pre-click-content"
+            class="inline-flex justify-center items-center gap-3 sm:hover:gap-2 ease-out duration-200 transition-all transform-gpu rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80 group/btn">
+            Share game link
+            <div id="share-game-link-button-arrow"
+              class="flex items-center opacity-50 sm:group-hover/btn:opacity-100 transition-opacity">
+              <svg role="img" viewBox="0 0 16 16" width="0" height="10" fill="currentColor"
+                class="w-0 sm:group-hover/btn:w-[0.7em] h-[0.7em] -mr-[0.7em] ease-out duration-200 transition-all transform-gpu">
+                <path d="M1 9h14a1 1 0 000-2H1a1 1 0 000 2z" />
+              </svg>
+              <svg role="img" viewBox="0 0 16 16" width="10" height="10" fill="currentColor" class="size-[0.7em]">
+                <path
+                  d="M7.293 1.707L13.586 8l-6.293 6.293a1 1 0 001.414 1.414l7-7a.999.999 0 000-1.414l-7-7a1 1 0 00-1.414 1.414z" />
+              </svg>
+            </div>
+          </div>
+
+          <div id="share-game-link-button-post-click-content"
+            class="hidden justify-center items-center gap-2 rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80">
+            Copied!
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="size-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
             </svg>
           </div>
-        </div>
-
-        <div id="share-game-link-button-post-click-content"
-          class="hidden justify-center items-center gap-2 rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80">
-          Copied!
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-            stroke="currentColor" class="size-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-          </svg>
-        </div>
-      </button>
+        </button>
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 
-<main class="px-1 py-2 sm:px-4 sm:py-6 md:px-6 lg:px-8">
-  <div class="mx-auto max-w-2xl h-full">
-    <.flash_group flash={@flash} />
-    {@inner_content}
-  </div>
-</main>
+  <main class="px-1 py-2 sm:px-4 sm:py-6 md:px-6 lg:px-8 h-full">
+    <div class="mx-auto max-w-2xl h-full">
+      <.flash_group flash={@flash} />
+      {@inner_content}
+    </div>
+  </main>
+</div>
 
 <!-- 
   We're using hidden inputs so that we can attach a mutation observer to

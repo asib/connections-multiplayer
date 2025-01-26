@@ -23,8 +23,9 @@
           </path>
         </svg>
       </button>
-      <dialog id="help-dialog" open
-        class="min-w-[max(50vw,500px)] absolute left-1/2 -translate-x-1/2 top-20 p-4 shadow-2xl drop-shadow-2xl font-normal">
+      <dialog id="help-dialog"
+        class="min-w-[max(50vw,500px)] sm:max-w-[50vw] p-4 shadow-2xl drop-shadow-2xl font-normal backdrop:bg-black/30 backdrop:backdrop-blur-sm opacity-0 translate-y-[-5%] open:opacity-100 open:translate-y-0 open:animate-slide-fade-in"
+        phx-hook="HelpDialog">
         <div class="w-full flex justify-end">
           <button id="close-help-button" phx-hook="CloseHelpButton" aria-label="close">
             <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -37,7 +38,7 @@
         <div class="px-6">
           <h1 class="text-3xl mt-2 mb-4 font-[Charter]">How to Play</h1>
           <ul class="list-disc">
-            <li>Find groups of 4 cards that are connected by a common theme, then click <span
+            <li>Find groups of 4 cards that are connected by a common theme, then tap <span
                 class="font-bold">Submit</span> to see if you've found a connection.</li>
             <li>Each set of 16 cards has exactly one solution. Be careful of cards that seem to fit into multiple
               categories.</li>
@@ -67,7 +68,7 @@
                 </li>
               </ul>
             </li>
-            <li>If you're stuck, click <span class="font-bold">Hint</span>. The first hint will give you two cards in
+            <li>If you're stuck, tap <span class="font-bold">Hint</span>. The first hint will give you two cards in
               the same theme, and the second will give you three.</li>
           </ul>
           <h2 class="text-xl mt-4 mb-2 font-[Charter]">Multiplayer</h2>
@@ -109,7 +110,8 @@
     </div>
   </div>
 </header>
-<main class="px-1 py-2 sm:px-4 sm:py-6 md:px-6 lg:px-8 h-full">
+
+<main class="px-1 py-2 sm:px-4 sm:py-6 md:px-6 lg:px-8">
   <div class="mx-auto max-w-2xl h-full">
     <.flash_group flash={@flash} />
     {@inner_content}

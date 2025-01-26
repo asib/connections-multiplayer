@@ -342,6 +342,33 @@ Hooks.PhraseTrigger = {
   }
 }
 
+Hooks.HelpDialog = {
+  mounted() {
+    this.el.addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) {
+        this.el.close();
+      }
+    });
+  }
+}
+
+Hooks.HelpButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      const dialog = document.getElementById("help-dialog");
+      dialog.showModal();
+    });
+  }
+}
+
+Hooks.CloseHelpButton = {
+  mounted() {
+    this.el.addEventListener("click", () => {
+      document.getElementById("help-dialog").close();
+    });
+  }
+}
+
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

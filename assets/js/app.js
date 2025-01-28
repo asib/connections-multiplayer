@@ -24,6 +24,7 @@ import topbar from "../vendor/topbar"
 import { createPopper } from '@popperjs/core';
 import gsap from "gsap";
 import textFit from "textfit";
+import { createPublisherHook } from "./voice_chat/publisher.js";
 
 const confetti = require('canvas-confetti');
 
@@ -369,6 +370,8 @@ Hooks.CloseHelpButton = {
   }
 }
 
+const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+Hooks.Publisher = createPublisherHook(iceServers);
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

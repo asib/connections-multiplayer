@@ -4,6 +4,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   alias ExWebRTC.{ICECandidate, PeerConnection, SessionDescription}
   alias Phoenix.PubSub
 
+  require Logger
+
   @type on_connected() :: (publisher_id :: String.t() -> any())
 
   @type on_packet() ::
@@ -39,11 +41,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     """
   )
 
+  attr(:room_id, :string, required: true, doc: "Voice chat room id")
+
   def live_render(assigns) do
     ~H"""
     {live_render(@socket, __MODULE__,
       id: "#{@publisher.id}-lv",
-      session: %{"publisher_id" => @publisher.id}
+      session: %{"publisher_id" => @publisher.id, "room_id" => @room_id}
     )}
     """
   end
@@ -78,7 +82,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
 
     socket
     |> assign(publisher: publisher)
-    |> attach_hook(:handshake, :handle_info, &handshake/2)
+    |> attach_hook(:publisher_handshake, :handle_info, &handshake/2)
   end
 
   defp handshake({__MODULE__, {:connected, ref, pid, _meta}}, socket) do
@@ -138,8 +142,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   end
 
   @impl true
-  def mount(_params, %{"publisher_id" => pub_id}, socket) do
-    socket = assign(socket, publisher: nil)
+  def mount(_params, %{"publisher_id" => pub_id, "room_id" => room_id}, socket) do
+    socket = assign(socket, publisher: nil, room_id: room_id)
 
     if connected?(socket) do
       ref = make_ref()
@@ -162,10 +166,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   def handle_info({:ex_webrtc, _pc, {:rtp, track_id, nil, packet}}, socket) do
     %{publisher: %__MODULE__{audio_track_id: ^track_id} = publisher} = socket.assigns
 
+    Logger.info("broadcasting audio packet to #{socket.assigns.room_id}")
+
     PubSub.broadcast(
       publisher.pubsub,
-      "streams:audio:#{publisher.id}",
-      {:live_ex_webrtc, :audio, packet}
+      "streams:audio:#{socket.assigns.room_id}",
+      {:live_ex_webrtc, :audio, publisher.id, packet}
     )
 
     if publisher.on_packet, do: publisher.on_packet.(publisher.id, :audio, packet, socket)
@@ -200,20 +206,28 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
 
   @impl true
   def handle_event("offer", unsigned_params, socket) do
+    Logger.info("received offer")
+
     %{publisher: publisher} = socket.assigns
     offer = SessionDescription.from_json(unsigned_params)
+    Logger.info("creating peer connection")
     {:ok, pc} = spawn_peer_connection(socket)
-
+    Logger.info("setting remote description")
     :ok = PeerConnection.set_remote_description(pc, offer)
 
     [%{kind: :audio, receiver: %{track: audio_track}}] = PeerConnection.get_transceivers(pc)
 
+    Logger.info("creating answer")
     {:ok, answer} = PeerConnection.create_answer(pc)
+    Logger.info("setting local description")
     :ok = PeerConnection.set_local_description(pc, answer)
+    Logger.info("gathering candidates")
     :ok = gather_candidates(pc)
+    Logger.info("getting local description")
     answer = PeerConnection.get_local_description(pc)
 
     # subscribe now that we are initialized
+    Logger.info("subscribing to pubsub")
     PubSub.subscribe(publisher.pubsub, "publishers:#{publisher.id}")
 
     new_publisher = %__MODULE__{
@@ -221,6 +235,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
       | pc: pc,
         audio_track_id: audio_track.id
     }
+
+    Logger.info("pushing answer")
 
     {:noreply,
      socket
@@ -237,6 +253,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
         {:noreply, socket}
 
       %__MODULE__{pc: pc} ->
+        Logger.info("adding ice candidate: null")
         :ok = PeerConnection.add_ice_candidate(pc, %ICECandidate{candidate: ""})
         {:noreply, socket}
     end
@@ -256,6 +273,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
           |> Jason.decode!()
           |> ExWebRTC.ICECandidate.from_json()
 
+        Logger.info("adding ice candidate: #{cand.candidate}")
         :ok = PeerConnection.add_ice_candidate(pc, cand)
 
         {:noreply, socket}

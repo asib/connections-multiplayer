@@ -70,7 +70,7 @@ config :connections_multiplayer, ConnectionsMultiplayerWeb.Endpoint,
 config :connections_multiplayer, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+config :logger, :console, format: "[$level] [$time] $message\n", level: :info
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

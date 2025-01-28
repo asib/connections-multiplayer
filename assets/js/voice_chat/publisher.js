@@ -9,16 +9,23 @@ export function createPublisherHook(iceServers = []) {
             view.toggleVoiceChatButton.addEventListener("click", async () => {
                 if (view.el.dataset.streaming === "false") {
                     await view.setupStream(view);
-                    view.startStreaming(view);
+                    await view.startStreaming(view);
+
                     view.el.dataset.streaming = "true";
+
                     view.toggleVoiceChatButton.classList.remove("bg-zinc-100", "hover:bg-zinc-200/80");
                     view.toggleVoiceChatButton.classList.add("bg-green-300", "hover:bg-green-400/80");
+
                     view.pushEvent("start-streaming", {});
                 } else {
+                    view.stopStreaming(view);
                     view.closeStream(view);
+
                     view.el.dataset.streaming = "false";
+
                     view.toggleVoiceChatButton.classList.remove("bg-green-300", "hover:bg-green-400/80");
                     view.toggleVoiceChatButton.classList.add("bg-zinc-100", "hover:bg-zinc-200/80");
+
                     view.pushEvent("stop-streaming", {});
                 }
             });
@@ -26,62 +33,26 @@ export function createPublisherHook(iceServers = []) {
             // handle remote events
             view.handleEvent(`answer-${view.el.id}`, async (answer) => {
                 if (view.pc) {
+                    console.log(`${new Date().toISOString()}: Setting remote description`);
                     await view.pc.setRemoteDescription(answer);
                 } else {
-                    console.warn("Received SDP cnswer but there is no PC. Ignoring.");
+                    console.warn(`${new Date().toISOString()}: Received SDP cnswer but there is no PC. Ignoring.`);
                 }
             });
 
             view.handleEvent(`ice-${view.el.id}`, async (cand) => {
                 if (view.pc) {
+                    console.log(`${new Date().toISOString()}: Adding ICE candidate`);
                     await view.pc.addIceCandidate(JSON.parse(cand));
                 } else {
-                    console.warn("Received ICE candidate but there is no PC. Ignoring.");
+                    console.warn(`${new Date().toISOString()}: Received ICE candidate but there is no PC. Ignoring.`);
                 }
             });
-
-            // try {
-            //     // skip device enumeration for now, go with default input
-            //     await view.findDevices(view);
-            //     try {
-            //         await view.setupStream(view);
-            //     } catch (error) {
-            //         console.error("Couldn't setup stream, reason:", error.stack);
-            //     }
-            // } catch (error) {
-            //     console.error(
-            //         "Couldn't find audio and/or video devices, reason: ",
-            //         error.stack
-            //     );
-            // }
         },
-
-        // async findDevices(view) {
-        //     // ask for permissions
-        //     view.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-        //     console.log(`Obtained stream with id: ${view.localStream.id}`);
-
-        //     // enumerate devices
-        //     const devices = await navigator.mediaDevices.enumerateDevices();
-        //     devices.forEach((device) => {
-        //         if (device.kind === "audioinput") {
-        //             // view.audioDevices.options[view.audioDevices.options.length] =
-        //             //     new Option(device.label, device.deviceId);
-        //             console.log(`audio device: ${device.label}`);
-        //             view.audioDevices = view.audioDevices || [];
-        //             view.audioDevices.push(device);
-        //         }
-        //     });
-
-        //     // for some reasons, firefox loses labels after closing the stream
-        //     // so we close it after filling audio/video devices selects
-        //     view.closeStream(view);
-        // },
 
         closeStream(view) {
             if (view.localStream != undefined) {
-                console.log(`Closing stream with id: ${view.localStream.id}`);
+                console.log(`${new Date().toISOString()}: Closing stream with id: ${view.localStream.id}`);
                 view.localStream.getTracks().forEach((track) => track.stop());
                 view.localStream = undefined;
             }
@@ -92,22 +63,16 @@ export function createPublisherHook(iceServers = []) {
                 view.closeStream(view);
             }
 
+            console.log(`${new Date().toISOString()}: Setting up local stream`);
             view.localStream = await navigator.mediaDevices.getUserMedia({
                 audio: true,
             });
-            // view.localStream = await navigator.mediaDevices.getUserMedia({
-            //     audio: {
-            //         deviceId: { exact: view.audioDevices[0].deviceId },
-            //         echoCancellation: true,
-            //         autoGainControl: true,
-            //         noiseSuppression: true,
-            //     },
-            // });
 
-            console.log(`Obtained stream with id: ${view.localStream.id}`);
+            console.log(`${new Date().toISOString()}: Obtained stream with id: ${view.localStream.id}`);
         },
 
         async startStreaming(view) {
+            console.log(`${new Date().toISOString()}: Creating peer connection`);
             view.pc = new RTCPeerConnection({ iceServers: iceServers });
 
             // handle local events
@@ -115,25 +80,32 @@ export function createPublisherHook(iceServers = []) {
                 if (view.pc.connectionState === "connected") {
                     //
                 } else if (view.pc.connectionState === "failed") {
+                    console.log(`${new Date().toISOString()}: Peer connection failed. Stopping streaming`);
                     view.pushEvent("stop-streaming", { reason: "failed" })
                     view.stopStreaming(view);
                 }
             };
 
             view.pc.onicecandidate = (ev) => {
+                console.log(`${new Date().toISOString()}: Sending ICE candidate`);
                 view.pushEventTo(view.el, "ice", JSON.stringify(ev.candidate));
             };
 
+            console.log(`${new Date().toISOString()}: Adding track to peer connection`);
             view.pc.addTrack(view.localStream.getAudioTracks()[0], view.localStream);
 
+            console.log(`${new Date().toISOString()}: Creating offer`);
             const offer = await view.pc.createOffer();
+            console.log(`${new Date().toISOString()}: Setting local description`);
             await view.pc.setLocalDescription(offer);
 
+            console.log(`${new Date().toISOString()}: Sending offer`);
             view.pushEventTo(view.el, "offer", offer);
         },
 
         stopStreaming(view) {
             if (view.pc) {
+                console.log(`${new Date().toISOString()}: Closing peer connection`);
                 view.pc.close();
                 view.pc = undefined;
             }

@@ -5,6 +5,7 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   alias ConnectionsMultiplayerWeb.GameRegistry
   alias ConnectionsMultiplayerWeb.Presence
   alias ConnectionsMultiplayerWeb.VoiceChat.Publisher
+  alias ConnectionsMultiplayerWeb.VoiceChat.Player
   alias Phoenix.LiveView.AsyncResult
 
   require Logger
@@ -20,7 +21,12 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
         [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
         fn -> load_game(game_id) end
       )
-      |> Publisher.attach(id: "publisher", pubsub: ConnectionsMultiplayer.PubSub)
+      |> Publisher.attach(id: socket.assigns.publisher_id, pubsub: ConnectionsMultiplayer.PubSub)
+      |> Player.attach(
+        id: "player",
+        publisher_id: socket.assigns.publisher_id,
+        pubsub: ConnectionsMultiplayer.PubSub
+      )
 
     socket =
       if connected?(socket) do

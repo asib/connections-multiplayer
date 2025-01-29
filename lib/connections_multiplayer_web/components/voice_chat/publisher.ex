@@ -19,7 +19,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
 
   defstruct id: nil,
             pc: nil,
-            streaming?: false,
             audio_track_id: nil,
             on_packet: nil,
             on_connected: nil,
@@ -105,21 +104,10 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   @impl true
   def render(assigns) do
     ~H"""
-    <div
-      id={@publisher.id}
-      phx-hook="Publisher"
-      class="fixed bottom-4 right-4 flex flex-col gap-2"
-      data-streaming={"#{@publisher.streaming?}"}
-    >
+    <div id={@publisher.id} phx-hook="Publisher" class="fixed bottom-4 right-4 flex flex-col gap-2">
       <button
         id="toggle-voice-chat"
-        class={[
-          "rounded-full p-3",
-          if(@publisher.streaming?,
-            do: "bg-green-300 hover:bg-green-400/80",
-            else: "bg-zinc-100 hover:bg-zinc-200/80"
-          )
-        ]}
+        class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80"
         aria-label="Toggle voice chat"
       >
         <svg
@@ -166,7 +154,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   def handle_info({:ex_webrtc, _pc, {:rtp, track_id, nil, packet}}, socket) do
     %{publisher: %__MODULE__{audio_track_id: ^track_id} = publisher} = socket.assigns
 
-    Logger.info("broadcasting audio packet to #{socket.assigns.room_id}")
+    Logger.info(
+      "#{__MODULE__} #{inspect(self())}: broadcasting audio packet to #{socket.assigns.room_id}"
+    )
 
     PubSub.broadcast(
       publisher.pubsub,
@@ -191,44 +181,26 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   end
 
   @impl true
-  def handle_event("start-streaming", _, socket) do
-    {:noreply,
-     socket
-     |> assign(publisher: %__MODULE__{socket.assigns.publisher | streaming?: true})}
-  end
-
-  @impl true
-  def handle_event("stop-streaming", _, socket) do
-    {:noreply,
-     socket
-     |> assign(publisher: %__MODULE__{socket.assigns.publisher | streaming?: false})}
-  end
-
-  @impl true
   def handle_event("offer", unsigned_params, socket) do
-    Logger.info("received offer")
+    Logger.info("#{__MODULE__} #{inspect(self())}: received offer")
 
     %{publisher: publisher} = socket.assigns
     offer = SessionDescription.from_json(unsigned_params)
-    Logger.info("creating peer connection")
+    Logger.info("#{__MODULE__} #{inspect(self())}: creating peer connection")
     {:ok, pc} = spawn_peer_connection(socket)
-    Logger.info("setting remote description")
+    Logger.info("#{__MODULE__} #{inspect(self())}: setting remote description")
     :ok = PeerConnection.set_remote_description(pc, offer)
 
     [%{kind: :audio, receiver: %{track: audio_track}}] = PeerConnection.get_transceivers(pc)
 
-    Logger.info("creating answer")
+    Logger.info("#{__MODULE__} #{inspect(self())}: creating answer")
     {:ok, answer} = PeerConnection.create_answer(pc)
-    Logger.info("setting local description")
+    Logger.info("#{__MODULE__} #{inspect(self())}: setting local description")
     :ok = PeerConnection.set_local_description(pc, answer)
-    Logger.info("gathering candidates")
+    Logger.info("#{__MODULE__} #{inspect(self())}: gathering candidates")
     :ok = gather_candidates(pc)
-    Logger.info("getting local description")
+    Logger.info("#{__MODULE__} #{inspect(self())}: getting local description")
     answer = PeerConnection.get_local_description(pc)
-
-    # subscribe now that we are initialized
-    Logger.info("subscribing to pubsub")
-    PubSub.subscribe(publisher.pubsub, "publishers:#{publisher.id}")
 
     new_publisher = %__MODULE__{
       publisher
@@ -236,7 +208,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
         audio_track_id: audio_track.id
     }
 
-    Logger.info("pushing answer")
+    Logger.info("#{__MODULE__} #{inspect(self())}: pushing answer")
 
     {:noreply,
      socket
@@ -253,7 +225,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
         {:noreply, socket}
 
       %__MODULE__{pc: pc} ->
-        Logger.info("adding ice candidate: null")
+        Logger.info("#{__MODULE__} #{inspect(self())}: adding ice candidate: null")
         :ok = PeerConnection.add_ice_candidate(pc, %ICECandidate{candidate: ""})
         {:noreply, socket}
     end
@@ -273,11 +245,29 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
           |> Jason.decode!()
           |> ExWebRTC.ICECandidate.from_json()
 
-        Logger.info("adding ice candidate: #{cand.candidate}")
+        Logger.info("#{__MODULE__} #{inspect(self())}: adding ice candidate: #{cand.candidate}")
         :ok = PeerConnection.add_ice_candidate(pc, cand)
 
         {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("close-peer-connection", _params, socket) do
+    %{publisher: publisher} = socket.assigns
+
+    Logger.info("#{__MODULE__} #{inspect(self())}: closing peer connection")
+    PeerConnection.remove_track(publisher.pc, publisher.audio_track_id)
+
+    PeerConnection.get_transceivers(publisher.pc)
+    |> Enum.each(fn tr ->
+      Logger.info("#{__MODULE__} #{inspect(self())}: removing transceiver: #{tr.mid}")
+      PeerConnection.stop_transceiver(publisher.pc, tr.mid)
+    end)
+
+    PeerConnection.close(publisher.pc)
+
+    {:noreply, assign(socket, publisher: %__MODULE__{publisher | pc: nil, audio_track_id: nil})}
   end
 
   defp spawn_peer_connection(socket) do

@@ -165,6 +165,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   def handle_info({:ex_webrtc, _pid, {:connection_state_change, :connected}}, socket) do
     %{player: player} = socket.assigns
 
+    Logger.info("#{__MODULE__} #{inspect(self())}: subscribing to pubsub")
+
     PubSub.subscribe(
       player.pubsub,
       "streams:audio:#{socket.assigns.room_id}"
@@ -183,7 +185,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     %{player: player} = socket.assigns
 
     if player.publisher_id != publisher_id do
-      Logger.info("received audio packet from #{publisher_id}")
+      Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from #{publisher_id}")
 
       packet =
         if player.on_packet,
@@ -191,6 +193,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
           else: packet
 
       PeerConnection.send_rtp(player.pc, player.audio_track_id, packet)
+    else
+      Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from self")
     end
 
     {:noreply, socket}
@@ -201,16 +205,22 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     %{player: player} = socket.assigns
 
     offer = SessionDescription.from_json(unsigned_params)
+    Logger.info("#{__MODULE__} #{inspect(self())}: creating peer connection")
     {:ok, pc} = spawn_peer_connection(socket)
-
+    Logger.info("#{__MODULE__} #{inspect(self())}: setting remote description")
     :ok = PeerConnection.set_remote_description(pc, offer)
 
     stream_id = MediaStreamTrack.generate_stream_id()
     audio_track = MediaStreamTrack.new(:audio, [stream_id])
+    Logger.info("#{__MODULE__} #{inspect(self())}: adding track")
     {:ok, _sender} = PeerConnection.add_track(pc, audio_track)
+    Logger.info("#{__MODULE__} #{inspect(self())}: creating answer")
     {:ok, answer} = PeerConnection.create_answer(pc)
+    Logger.info("#{__MODULE__} #{inspect(self())}: setting local description")
     :ok = PeerConnection.set_local_description(pc, answer)
+    Logger.info("#{__MODULE__} #{inspect(self())}: gathering candidates")
     :ok = gather_candidates(pc)
+    Logger.info("#{__MODULE__} #{inspect(self())}: getting local description")
     answer = PeerConnection.get_local_description(pc)
 
     new_player = %__MODULE__{
@@ -218,6 +228,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
       | pc: pc,
         audio_track_id: audio_track.id
     }
+
+    Logger.info("#{__MODULE__} #{inspect(self())}: pushing answer")
 
     {:noreply,
      socket
@@ -234,6 +246,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
         {:noreply, socket}
 
       %__MODULE__{pc: pc} ->
+        Logger.info("#{__MODULE__} #{inspect(self())}: adding ice candidate: null")
         :ok = PeerConnection.add_ice_candidate(pc, %ICECandidate{candidate: ""})
         {:noreply, socket}
     end
@@ -253,6 +266,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
           |> Jason.decode!()
           |> ExWebRTC.ICECandidate.from_json()
 
+        Logger.info("#{__MODULE__} #{inspect(self())}: adding ice candidate: #{cand.candidate}")
         :ok = PeerConnection.add_ice_candidate(pc, cand)
 
         {:noreply, socket}

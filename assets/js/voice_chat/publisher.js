@@ -7,7 +7,7 @@ export function createPublisherHook(iceServers = []) {
 
             view.toggleVoiceChatButton = document.getElementById("toggle-voice-chat");
             view.toggleVoiceChatButton.addEventListener("click", async () => {
-                if (view.el.dataset.streaming === "false") {
+                if (view.pc === undefined) {
                     await view.setupStream(view);
                     await view.startStreaming(view);
 
@@ -15,8 +15,6 @@ export function createPublisherHook(iceServers = []) {
 
                     view.toggleVoiceChatButton.classList.remove("bg-zinc-100", "hover:bg-zinc-200/80");
                     view.toggleVoiceChatButton.classList.add("bg-green-300", "hover:bg-green-400/80");
-
-                    view.pushEvent("start-streaming", {});
                 } else {
                     view.stopStreaming(view);
                     view.closeStream(view);
@@ -25,8 +23,6 @@ export function createPublisherHook(iceServers = []) {
 
                     view.toggleVoiceChatButton.classList.remove("bg-green-300", "hover:bg-green-400/80");
                     view.toggleVoiceChatButton.classList.add("bg-zinc-100", "hover:bg-zinc-200/80");
-
-                    view.pushEvent("stop-streaming", {});
                 }
             });
 
@@ -64,7 +60,7 @@ export function createPublisherHook(iceServers = []) {
             }
 
             console.log(`${new Date().toISOString()}: Setting up local stream`);
-            view.localStream = await navigator.mediaDevices.getUserMedia({
+            view.localStream = await window.navigator.mediaDevices.getUserMedia({
                 audio: true,
             });
 
@@ -81,7 +77,6 @@ export function createPublisherHook(iceServers = []) {
                     //
                 } else if (view.pc.connectionState === "failed") {
                     console.log(`${new Date().toISOString()}: Peer connection failed. Stopping streaming`);
-                    view.pushEvent("stop-streaming", { reason: "failed" })
                     view.stopStreaming(view);
                 }
             };
@@ -106,8 +101,23 @@ export function createPublisherHook(iceServers = []) {
         stopStreaming(view) {
             if (view.pc) {
                 console.log(`${new Date().toISOString()}: Closing peer connection`);
+
+                const senders = view.pc.getSenders();
+                senders.forEach((sender) => {
+                    view.pc.removeTrack(sender);
+                });
+
+                const transceivers = view.pc.getTransceivers();
+                transceivers.forEach((transceiver) => {
+                    if (transceiver.stop) {
+                        transceiver.stop();
+                    }
+                });
+
                 view.pc.close();
                 view.pc = undefined;
+
+                view.pushEventTo(view.el, "close-peer-connection", {});
             }
         }
     };

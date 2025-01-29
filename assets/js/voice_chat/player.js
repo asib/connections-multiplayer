@@ -1,14 +1,18 @@
 export function createPlayerHook(iceServers = []) {
     return {
         async mounted() {
+            console.log(`${new Date().toISOString()}: Creating peer connection`);
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
 
             this.pc.onicecandidate = (ev) => {
+                console.log(`${new Date().toISOString()}: Sending ICE candidate`);
                 this.pushEventTo(this.el, "ice", JSON.stringify(ev.candidate));
             };
 
             this.pc.ontrack = (ev) => {
+                console.log(`${new Date().toISOString()}: Receiving track`);
                 if (!this.el.srcObject) {
+                    console.log(`${new Date().toISOString()}: Setting srcObject`);
                     this.el.srcObject = ev.streams[0];
                 }
             };

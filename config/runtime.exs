@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :connections_multiplayer, ConnectionsMultiplayerWeb.Endpoint, server: true
 end
 
+if System.get_env("FLY_APP_NAME") do
+  config :connections_multiplayer, ice_ip_filter: &ExWebRTC.ICE.FlyIpFilter.ip_filter/1
+end
+
 if config_env() == :prod do
   database_path =
     System.get_env("DATABASE_PATH") ||

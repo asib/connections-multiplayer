@@ -12,6 +12,8 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
 
   @impl true
   def mount(%{"game_id" => game_id}, _session, socket) do
+    ip_filter = Application.get_env(:connections_multiplayer, :ice_ip_filter)
+
     socket =
       socket
       |> stream(:presences, [])
@@ -21,11 +23,16 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
         [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
         fn -> load_game(game_id) end
       )
-      |> Publisher.attach(id: socket.assigns.publisher_id, pubsub: ConnectionsMultiplayer.PubSub)
+      |> Publisher.attach(
+        id: socket.assigns.publisher_id,
+        pubsub: ConnectionsMultiplayer.PubSub,
+        ice_ip_filter: ip_filter
+      )
       |> Player.attach(
         id: "player",
         publisher_id: socket.assigns.publisher_id,
-        pubsub: ConnectionsMultiplayer.PubSub
+        pubsub: ConnectionsMultiplayer.PubSub,
+        ice_ip_filter: ip_filter
       )
 
     socket =

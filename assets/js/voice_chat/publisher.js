@@ -3,12 +3,9 @@ export function createPublisherHook(iceServers = []) {
         async mounted() {
             const view = this;
 
-            view.audioDevices = [];
-
             view.toggleVoiceChatButton = document.getElementById("toggle-voice-chat");
             view.toggleVoiceChatButton.addEventListener("click", async () => {
                 if (view.pc === undefined) {
-                    await view.setupStream(view);
                     await view.startStreaming(view);
 
                     view.el.dataset.streaming = "true";
@@ -17,7 +14,6 @@ export function createPublisherHook(iceServers = []) {
                     view.toggleVoiceChatButton.classList.add("bg-green-300", "hover:bg-green-400/80");
                 } else {
                     view.stopStreaming(view);
-                    view.closeStream(view);
 
                     view.el.dataset.streaming = "false";
 
@@ -46,17 +42,9 @@ export function createPublisherHook(iceServers = []) {
             });
         },
 
-        closeStream(view) {
+        async startStreaming(view) {
             if (view.localStream != undefined) {
-                console.log(`${new Date().toISOString()}: Closing stream with id: ${view.localStream.id}`);
-                view.localStream.getTracks().forEach((track) => track.stop());
-                view.localStream = undefined;
-            }
-        },
-
-        async setupStream(view) {
-            if (view.localStream != undefined) {
-                view.closeStream(view);
+                view.stopStreaming(view);
             }
 
             console.log(`${new Date().toISOString()}: Setting up local stream`);
@@ -65,16 +53,14 @@ export function createPublisherHook(iceServers = []) {
             });
 
             console.log(`${new Date().toISOString()}: Obtained stream with id: ${view.localStream.id}`);
-        },
 
-        async startStreaming(view) {
             console.log(`${new Date().toISOString()}: Creating peer connection`);
             view.pc = new RTCPeerConnection({ iceServers: iceServers });
 
             // handle local events
             view.pc.onconnectionstatechange = () => {
                 if (view.pc.connectionState === "connected") {
-                    //
+                    console.log(`${new Date().toISOString()}: Peer connection connected. Starting streaming`);
                 } else if (view.pc.connectionState === "failed") {
                     console.log(`${new Date().toISOString()}: Peer connection failed. Stopping streaming`);
                     view.stopStreaming(view);
@@ -102,22 +88,14 @@ export function createPublisherHook(iceServers = []) {
             if (view.pc) {
                 console.log(`${new Date().toISOString()}: Closing peer connection`);
 
-                const senders = view.pc.getSenders();
-                senders.forEach((sender) => {
-                    view.pc.removeTrack(sender);
-                });
-
-                const transceivers = view.pc.getTransceivers();
-                transceivers.forEach((transceiver) => {
-                    if (transceiver.stop) {
-                        transceiver.stop();
-                    }
-                });
-
                 view.pc.close();
                 view.pc = undefined;
+            }
 
-                view.pushEventTo(view.el, "close-peer-connection", {});
+            if (view.localStream != undefined) {
+                console.log(`${new Date().toISOString()}: Closing stream with id: ${view.localStream.id}`);
+                view.localStream.getTracks().forEach((track) => track.stop());
+                view.localStream = undefined;
             }
         }
     };

@@ -252,24 +252,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     end
   end
 
-  @impl true
-  def handle_event("close-peer-connection", _params, socket) do
-    %{publisher: publisher} = socket.assigns
-
-    Logger.info("#{__MODULE__} #{inspect(self())}: closing peer connection")
-    PeerConnection.remove_track(publisher.pc, publisher.audio_track_id)
-
-    PeerConnection.get_transceivers(publisher.pc)
-    |> Enum.each(fn tr ->
-      Logger.info("#{__MODULE__} #{inspect(self())}: removing transceiver: #{tr.mid}")
-      PeerConnection.stop_transceiver(publisher.pc, tr.mid)
-    end)
-
-    PeerConnection.close(publisher.pc)
-
-    {:noreply, assign(socket, publisher: %__MODULE__{publisher | pc: nil, audio_track_id: nil})}
-  end
-
   defp spawn_peer_connection(socket) do
     %{publisher: publisher} = socket.assigns
 

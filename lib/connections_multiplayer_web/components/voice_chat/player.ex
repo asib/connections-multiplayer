@@ -141,7 +141,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
   @impl true
   def mount(_params, %{"publisher_id" => pub_id, "class" => class, "room_id" => room_id}, socket) do
-    socket = assign(socket, class: class, player: nil, room_id: room_id)
+    socket =
+      assign(socket, class: class, player: nil, room_id: room_id, last_sequence_number: nil)
 
     if connected?(socket) do
       ref = make_ref()
@@ -184,6 +185,18 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   def handle_info({:live_ex_webrtc, :audio, publisher_id, packet}, socket) do
     %{player: player} = socket.assigns
 
+    %{sequence_number: sequence_number} = packet
+
+    {socket, packet} =
+      if socket.assigns.last_sequence_number == nil do
+        {assign(socket, last_sequence_number: sequence_number), packet}
+      else
+        new_last_sequence_number = socket.assigns.last_sequence_number + 1
+
+        {assign(socket, last_sequence_number: new_last_sequence_number),
+         %{packet | sequence_number: new_last_sequence_number}}
+      end
+
     if player.publisher_id != publisher_id do
       Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from #{publisher_id}")
 
@@ -192,6 +205,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
           do: player.on_packet.(player.publisher_id, :audio, packet, socket),
           else: packet
 
+      dbg(packet)
       PeerConnection.send_rtp(player.pc, player.audio_track_id, packet)
     else
       Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from self")

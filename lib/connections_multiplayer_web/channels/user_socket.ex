@@ -9,6 +9,7 @@ defmodule ConnectionsMultiplayerWeb.UserSocket do
   ## Channels
 
   channel "game:*", ConnectionsMultiplayerWeb.GameChannel
+  channel "voice_chat:*", ConnectionsMultiplayerWeb.VoiceChatChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

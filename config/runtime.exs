@@ -61,6 +61,10 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  if System.get_env("FLY_APP_NAME") do
+    config :connections_multiplayer, ice_ip_filter: &ExWebRTC.ICE.FlyIpFilter.ip_filter/1
+  end
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

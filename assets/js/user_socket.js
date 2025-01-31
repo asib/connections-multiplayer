@@ -4,10 +4,10 @@
 // Bring in Phoenix channels client library:
 import { Socket } from "phoenix"
 
-let socket, channel;
+let socket, gameChannel, voiceChatChannel;
 let avatar, colour, gameId;
 
-function connectAndJoinChannel() {
+function connectAndJoinChannel(onVoiceChatChannelConnected) {
   // And connect to the path in "lib/connections_multiplayer_web/endpoint.ex". We pass the
   // token for authentication. Read below how it should be used.
   avatar = document.querySelector("#user-avatar").value;
@@ -78,35 +78,32 @@ function connectAndJoinChannel() {
   // Now that you are connected, you can join channels with a topic.
   // Let's assume you have a channel with a topic named `room` and the
   // subtopic is its id - in this case 42:
-  let channel = socket.channel(`game:${gameId}:online_users`, {})
-  channel.join()
-    .receive("ok", resp => { console.log("Joined successfully", resp) })
-    .receive("error", resp => { console.log("Unable to join", resp) })
+  gameChannel = socket.channel(`game:${gameId}:online_users`, {})
+  gameChannel.join()
+    .receive("ok", resp => { console.log("Joined game online users channel", resp) })
+    .receive("error", resp => { console.log("Unable to join game online users channel", resp) })
+
+  voiceChatChannel = socket.channel(`voice_chat:${gameId}`, {})
+  voiceChatChannel.join()
+    .receive("ok", resp => { console.log("Joined voice chat channel", resp); onVoiceChatChannelConnected(voiceChatChannel) })
+    .receive("error", resp => { console.log("Unable to join voice chat channel", resp) })
 }
 
-function setupSocket() {
+function setupSocket(onVoiceChatChannelConnected) {
   if (avatar == document.querySelector("#user-avatar").value
     && colour == document.querySelector("#user-colour").value
     && gameId == window.location.pathname.split('/').pop()) {
     return;
   }
 
-  if (channel !== undefined) channel.leave()
+  if (gameChannel !== undefined) gameChannel.leave()
+  if (voiceChatChannel !== undefined) voiceChatChannel.leave()
 
   if (socket !== undefined) {
-    socket.disconnect(connectAndJoinChannel)
+    socket.disconnect(() => { connectAndJoinChannel(onVoiceChatChannelConnected) })
   } else {
-    connectAndJoinChannel()
+    connectAndJoinChannel(onVoiceChatChannelConnected)
   }
 }
 
-setupSocket();
-
-const mutationObserver = new MutationObserver((mutations) => {
-  for (const _mutation of mutations) {
-    setupSocket();
-  }
-});
-mutationObserver.observe(document.querySelector("#user-avatar"), { attributes: true });
-
-export { mutationObserver, setupSocket };
+export { setupSocket };

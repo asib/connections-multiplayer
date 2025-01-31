@@ -4,12 +4,16 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
   alias ConnectionsMultiplayerWeb.Game
   alias ConnectionsMultiplayerWeb.GameRegistry
   alias ConnectionsMultiplayerWeb.Presence
+  alias ConnectionsMultiplayerWeb.VoiceChat.Publisher
+  alias ConnectionsMultiplayerWeb.VoiceChat.Player
   alias Phoenix.LiveView.AsyncResult
 
   require Logger
 
   @impl true
   def mount(%{"game_id" => game_id}, _session, socket) do
+    ip_filter = Application.get_env(:connections_multiplayer, :ice_ip_filter)
+
     socket =
       socket
       |> stream(:presences, [])
@@ -18,6 +22,17 @@ defmodule ConnectionsMultiplayerWeb.PlayLive do
       |> assign_async(
         [:puzzle_date, :puzzle_date_form, :found_categories, :cards, :category_difficulties],
         fn -> load_game(game_id) end
+      )
+      |> Publisher.attach(
+        id: socket.assigns.publisher_id,
+        pubsub: ConnectionsMultiplayer.PubSub,
+        ice_ip_filter: ip_filter
+      )
+      |> Player.attach(
+        id: "player",
+        publisher_id: socket.assigns.publisher_id,
+        pubsub: ConnectionsMultiplayer.PubSub,
+        ice_ip_filter: ip_filter
       )
 
     socket =

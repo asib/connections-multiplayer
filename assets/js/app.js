@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-import { mutationObserver, setupSocket } from "./user_socket.js"
+import { setupSocket } from "./user_socket.js"
 
 // You can include dependencies in two ways.
 //
@@ -24,6 +24,8 @@ import topbar from "../vendor/topbar"
 import { createPopper } from '@popperjs/core';
 import gsap from "gsap";
 import textFit from "textfit";
+import { createPublisherHook } from "./voice_chat/publisher.js";
+import { createPlayerHook, onVoiceChatChannelConnected } from "./voice_chat/player.js";
 
 const confetti = require('canvas-confetti');
 
@@ -319,7 +321,14 @@ Hooks.CardButton = {
 
 Hooks.PresenceTrigger = {
   mounted() {
-    setupSocket();
+    setupSocket(onVoiceChatChannelConnected);
+
+    const mutationObserver = new MutationObserver((mutations) => {
+      for (const _mutation of mutations) {
+        setupSocket(onVoiceChatChannelConnected);
+      }
+    });
+    mutationObserver.observe(document.querySelector("#user-avatar"), { attributes: true });
     mutationObserver.observe(this.el, { attributes: true });
   }
 }
@@ -369,6 +378,9 @@ Hooks.CloseHelpButton = {
   }
 }
 
+const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+Hooks.Publisher = createPublisherHook(iceServers);
+Hooks.Player = createPlayerHook(iceServers);
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {

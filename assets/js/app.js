@@ -332,10 +332,11 @@ Hooks.PhraseTrigger = {
     let phrase = "";
     window.addEventListener("keypress", (e) => {
       phrase += e.key;
+
       if (phrase.length > word.length) {
         phrase = phrase.substring(1, word.length + 1);
       }
-      console.log(phrase)
+
       if (phrase === word) {
         this.pushEvent("archive", {});
       }

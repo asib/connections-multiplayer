@@ -3,6 +3,13 @@ export function createPublisherHook(iceServers = []) {
         async mounted() {
             const view = this;
 
+            this.el.querySelectorAll("#frequency-buttons>button").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const frequency = parseInt(button.textContent);
+                    view.pc.getSenders()[0].replaceTrack(view.createSineWaveTrack(frequency));
+                });
+            });
+
             view.toggleVoiceChatButton = document.getElementById("toggle-voice-chat");
             view.toggleVoiceChatButton.addEventListener("click", async () => {
                 if (view.pc === undefined) {
@@ -73,7 +80,8 @@ export function createPublisherHook(iceServers = []) {
             };
 
             console.log(`${new Date().toISOString()}: Adding track to peer connection`);
-            view.pc.addTrack(view.localStream.getAudioTracks()[0], view.localStream);
+            // view.pc.addTrack(view.localStream.getAudioTracks()[0], view.localStream);
+            view.pc.addTrack(view.createSineWaveTrack());
 
             console.log(`${new Date().toISOString()}: Creating offer`);
             const offer = await view.pc.createOffer();
@@ -97,6 +105,24 @@ export function createPublisherHook(iceServers = []) {
                 view.localStream.getTracks().forEach((track) => track.stop());
                 view.localStream = undefined;
             }
+        },
+
+        createSineWaveTrack(frequency = 196) { // in Hz
+            const audioContext = new AudioContext();
+            const destination = audioContext.createMediaStreamDestination();
+
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.start();
+
+            const gain = audioContext.createGain();
+            gain.gain.value = 0.05;
+
+            oscillator.connect(gain);
+            gain.connect(destination);
+
+            return destination.stream.getAudioTracks()[0];
         }
     };
 }

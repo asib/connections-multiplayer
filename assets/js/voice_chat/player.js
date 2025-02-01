@@ -30,17 +30,28 @@ export function createPlayerHook(iceServers = []) {
                 };
             }
 
-            this.pc.addTransceiver("audio", { direction: "recvonly" });
-
-            const offer = await this.pc.createOffer();
-            await this.pc.setLocalDescription(offer);
-
             const eventName = "answer" + "-" + this.el.id;
             this.handleEvent(eventName, async (answer) => {
+                console.log(`${new Date().toISOString()}: Got offer answer`);
                 await this.pc.setRemoteDescription(answer);
+
+                console.log(`${new Date().toISOString()}: Pushing negotiation complete`);
+                this.pushEventTo(this.el, "negotiation-complete", {});
             });
 
-            this.pushEventTo(this.el, "offer", offer);
+            console.log(`${new Date().toISOString()}: Soliciting offer`);
+            this.pushEventTo(this.el, "soliciting-offer", {}, async ({ num_transceivers }) => {
+                console.log(`${new Date().toISOString()}: Adding ${num_transceivers} transceivers`);
+                for (let i = 0; i < num_transceivers; i++) {
+                    this.pc.addTransceiver("audio", { direction: "recvonly" });
+                }
+
+                const offer = await this.pc.createOffer();
+                await this.pc.setLocalDescription(offer);
+
+                console.log(`${new Date().toISOString()}: Pushing offer`);
+                this.pushEventTo(this.el, "offer", offer);
+            });
         },
 
         setupMuteButton() {

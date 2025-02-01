@@ -1,4 +1,5 @@
 defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
+  alias ConnectionsMultiplayerWeb.VoiceChatMux
   use ConnectionsMultiplayerWeb, :live_view
 
   require Logger
@@ -18,7 +19,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
             publisher_id: nil,
             pubsub: nil,
             pc: nil,
-            audio_track_id: nil,
+            publisher_to_audio_track_id: nil,
+            publishers: nil,
+            is_negotiating_setup?: true,
             on_packet: nil,
             on_connected: nil,
             ice_servers: nil,
@@ -240,40 +243,75 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   @impl true
-  def handle_event("offer", unsigned_params, socket) do
+  def handle_event("soliciting-offer", _params, socket) do
+    {:ok, pc} = spawn_peer_connection(socket)
+
+    {:ok, publishers} =
+      VoiceChatMux.add_listener_to_game_and_subscribe(socket.assigns.room_id, pc)
+
+    socket =
+      assign(socket,
+        player: %__MODULE__{
+          socket.assigns.player
+          | publishers: publishers,
+            is_negotiating_setup?: true
+        }
+      )
+
+    {:reply,
+     %{
+       "num_transceivers" => Enum.count(publishers)
+     }, socket}
+  end
+
+  @impl true
+  def handle_event("answer", unsigned_params, socket) do
     %{player: player} = socket.assigns
 
+    answer = SessionDescription.from_json(unsigned_params)
+    :ok = PeerConnection.set_remote_description(player.pc, answer)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("offer", unsigned_params, socket) do
+    %{player: %{pc: pc, publishers: publishers} = player} = socket.assigns
+
     offer = SessionDescription.from_json(unsigned_params)
-    Logger.info("#{__MODULE__} #{inspect(self())}: creating peer connection")
-    {:ok, pc} = spawn_peer_connection(socket)
-    Logger.info("#{__MODULE__} #{inspect(self())}: setting remote description")
     :ok = PeerConnection.set_remote_description(pc, offer)
 
-    stream_id = MediaStreamTrack.generate_stream_id()
-    audio_track = MediaStreamTrack.new(:audio, [stream_id])
-    Logger.info("#{__MODULE__} #{inspect(self())}: adding track")
-    {:ok, _sender} = PeerConnection.add_track(pc, audio_track)
-    Logger.info("#{__MODULE__} #{inspect(self())}: creating answer")
+    publisher_to_audio_track_id =
+      Map.new(publishers, fn publisher_pid ->
+        stream_id = MediaStreamTrack.generate_stream_id()
+        audio_track = MediaStreamTrack.new(:audio, [stream_id])
+        {:ok, _sender} = PeerConnection.add_track(pc, audio_track)
+
+        {publisher_pid, audio_track.id}
+      end)
+
     {:ok, answer} = PeerConnection.create_answer(pc)
-    Logger.info("#{__MODULE__} #{inspect(self())}: setting local description")
     :ok = PeerConnection.set_local_description(pc, answer)
-    Logger.info("#{__MODULE__} #{inspect(self())}: gathering candidates")
     :ok = gather_candidates(pc)
-    Logger.info("#{__MODULE__} #{inspect(self())}: getting local description")
     answer = PeerConnection.get_local_description(pc)
 
     new_player = %__MODULE__{
       player
       | pc: pc,
-        audio_track_id: audio_track.id
+        publisher_to_audio_track_id: publisher_to_audio_track_id
     }
-
-    Logger.info("#{__MODULE__} #{inspect(self())}: pushing answer")
 
     {:noreply,
      socket
      |> assign(player: new_player)
      |> push_event("answer-#{player.id}", SessionDescription.to_json(answer))}
+  end
+
+  @impl true
+  def handle_event("negotiation-complete", _params, socket) do
+    %{player: player} = socket.assigns
+
+    {:noreply, assign(socket, player: %__MODULE__{player | is_negotiating_setup?: false})}
   end
 
   @impl true
@@ -285,7 +323,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
         {:noreply, socket}
 
       %__MODULE__{pc: pc} ->
-        Logger.info("#{__MODULE__} #{inspect(self())}: adding ice candidate: null")
         :ok = PeerConnection.add_ice_candidate(pc, %ICECandidate{candidate: ""})
         {:noreply, socket}
     end
@@ -305,7 +342,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
           |> Jason.decode!()
           |> ExWebRTC.ICECandidate.from_json()
 
-        Logger.info("#{__MODULE__} #{inspect(self())}: adding ice candidate: #{cand.candidate}")
         :ok = PeerConnection.add_ice_candidate(pc, cand)
 
         {:noreply, socket}

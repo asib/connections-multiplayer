@@ -1,4 +1,5 @@
 defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
+  alias ConnectionsMultiplayerWeb.VoiceChatMux
   use ConnectionsMultiplayerWeb, :live_view
 
   alias ExWebRTC.{ICECandidate, PeerConnection, SessionDescription}
@@ -214,6 +215,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     }
 
     Logger.info("#{__MODULE__} #{inspect(self())}: pushing answer")
+
+    VoiceChatMux.add_publisher_to_game(socket.assigns.room_id, pc)
 
     {:noreply,
      socket

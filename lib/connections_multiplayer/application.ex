@@ -18,6 +18,7 @@ defmodule ConnectionsMultiplayer.Application do
       {Phoenix.PubSub, name: ConnectionsMultiplayer.PubSub},
       ConnectionsMultiplayerWeb.GameRegistry,
       ConnectionsMultiplayerWeb.Presence,
+      ConnectionsMultiplayerWeb.VoiceChatMux,
       # Start a worker by calling: ConnectionsMultiplayer.Worker.start_link(arg)
       # {ConnectionsMultiplayer.Worker, arg},
       # Start to serve requests, typically the last entry

@@ -30,6 +30,10 @@ export function createPlayerHook(iceServers = []) {
                 };
             }
 
+            this.pc.onnegotiationneeded = (ev) => {
+                console.log(`${new Date().toISOString()}: Negotiation needed: ${JSON.stringify(ev)}`);
+            };
+
             const eventName = "answer" + "-" + this.el.id;
             this.handleEvent(eventName, async (answer) => {
                 console.log(`${new Date().toISOString()}: Got offer answer`);
@@ -46,7 +50,7 @@ export function createPlayerHook(iceServers = []) {
                     this.pc.addTransceiver("audio", { direction: "recvonly" });
                 }
 
-                const offer = await this.pc.createOffer();
+                const offer = await this.pc.createOffer({ offerToReceiveAudio: true });
                 await this.pc.setLocalDescription(offer);
 
                 console.log(`${new Date().toISOString()}: Pushing offer`);

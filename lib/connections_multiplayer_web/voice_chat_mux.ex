@@ -65,7 +65,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
       update_in(state, [type, game_id], &MapSet.delete(&1, pid))
       |> then(fn state -> update_in(state.peers, &Map.delete(&1, pid)) end)
 
-    type_singular = Atom.to_string(type) |> String.slice(0..-2//1)
+    type_singular =
+      case type do
+        :publishers -> "publisher"
+        :listeners -> "listener"
+      end
+
     broadcast(game_id, {type_singular <> "_removed", pid})
 
     {:noreply, new_state}

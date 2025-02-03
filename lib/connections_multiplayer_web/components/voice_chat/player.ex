@@ -170,7 +170,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   @impl true
   def mount(_params, %{"publisher_id" => pub_id, "class" => class, "room_id" => room_id}, socket) do
     socket =
-      assign(socket, class: class, player: nil, room_id: room_id, last_sequence_number: nil)
+      assign(socket, class: class, player: nil, room_id: room_id)
 
     if connected?(socket) do
       ref = make_ref()
@@ -206,39 +206,84 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     {:noreply, socket}
   end
 
+  def handle_info({:ex_webrtc, _pid, :negotiation_needed}, socket) do
+    Logger.info("#{__MODULE__} #{inspect(self())}: negotiation needed")
+
+    {:noreply, socket}
+  end
+
   def handle_info({:ex_webrtc, _pid, _}, socket) do
     {:noreply, socket}
   end
 
-  def handle_info({:live_ex_webrtc, :audio, publisher_id, packet}, socket) do
+  def handle_info(
+        {:live_ex_webrtc, :audio,
+         %{publisher_id: publisher_id, packet: packet, publisher_pid: publisher_pid}},
+        socket
+      ) do
     %{player: player} = socket.assigns
 
-    %{sequence_number: sequence_number} = packet
-
-    {socket, packet} =
-      if socket.assigns.last_sequence_number == nil do
-        {assign(socket, last_sequence_number: sequence_number), packet}
-      else
-        new_last_sequence_number = socket.assigns.last_sequence_number + 1
-
-        {assign(socket, last_sequence_number: new_last_sequence_number),
-         %{packet | sequence_number: new_last_sequence_number}}
-      end
-
     if player.publisher_id != publisher_id do
-      Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from #{publisher_id}")
+      # Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from #{publisher_id}")
 
       packet =
         if player.on_packet,
           do: player.on_packet.(player.publisher_id, :audio, packet, socket),
           else: packet
 
-      dbg(packet)
-      PeerConnection.send_rtp(player.pc, player.audio_track_id, packet)
+      case player.publisher_to_audio_track_id[publisher_pid] do
+        nil ->
+          Logger.error(
+            "#{__MODULE__} #{inspect(self())}: received audio packet from #{publisher_id} but no audio track id found: #{inspect(player.publisher_to_audio_track_id)}"
+          )
+
+        audio_track_id ->
+          Logger.info(
+            "#{__MODULE__} #{inspect(self())}: sending audio packet to #{audio_track_id}"
+          )
+
+          PeerConnection.send_rtp(player.pc, audio_track_id, packet)
+      end
     else
-      Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from self")
+      # Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from self")
+      nil
     end
 
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(
+        {:publisher_added, _publisher_pid} = msg,
+        %{assigns: %{player: %__MODULE__{is_negotiating_setup?: true}}} = socket
+      ) do
+    Process.send_after(self(), msg, 100)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(
+        {:publisher_added, publisher_pid},
+        %{assigns: %{player: %__MODULE__{is_negotiating_setup?: false}}} = socket
+      ) do
+    Logger.info("#{__MODULE__} #{inspect(self())}: adding publisher #{inspect(publisher_pid)}")
+    %{player: player} = socket.assigns
+
+    audio_track_id = add_new_audio_track(player.pc)
+    {:ok, offer} = PeerConnection.create_offer(player.pc)
+    PeerConnection.set_local_description(player.pc, offer)
+
+    new_player = %__MODULE__{
+      player
+      | publisher_to_audio_track_id:
+          Map.put(player.publisher_to_audio_track_id, publisher_pid, audio_track_id)
+    }
+
+    {:noreply, assign(socket, :player, new_player)}
+  end
+
+  @impl true
+  def handle_info({:listener_added, _listener_pid}, socket) do
     {:noreply, socket}
   end
 
@@ -253,7 +298,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
       assign(socket,
         player: %__MODULE__{
           socket.assigns.player
-          | publishers: publishers,
+          | pc: pc,
+            publishers: publishers,
             is_negotiating_setup?: true
         }
       )
@@ -265,30 +311,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   @impl true
-  def handle_event("answer", unsigned_params, socket) do
-    %{player: player} = socket.assigns
-
-    answer = SessionDescription.from_json(unsigned_params)
-    :ok = PeerConnection.set_remote_description(player.pc, answer)
-
-    {:noreply, socket}
-  end
-
-  @impl true
   def handle_event("offer", unsigned_params, socket) do
     %{player: %{pc: pc, publishers: publishers} = player} = socket.assigns
 
     offer = SessionDescription.from_json(unsigned_params)
     :ok = PeerConnection.set_remote_description(pc, offer)
-
-    publisher_to_audio_track_id =
-      Map.new(publishers, fn publisher_pid ->
-        stream_id = MediaStreamTrack.generate_stream_id()
-        audio_track = MediaStreamTrack.new(:audio, [stream_id])
-        {:ok, _sender} = PeerConnection.add_track(pc, audio_track)
-
-        {publisher_pid, audio_track.id}
-      end)
+    publisher_to_audio_track_id = Map.new(publishers, &{&1, add_new_audio_track(pc)})
 
     {:ok, answer} = PeerConnection.create_answer(pc)
     :ok = PeerConnection.set_local_description(pc, answer)
@@ -371,5 +399,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     after
       1000 -> :ok
     end
+  end
+
+  defp add_new_audio_track(pc) do
+    stream_id = MediaStreamTrack.generate_stream_id()
+    audio_track = MediaStreamTrack.new(:audio, [stream_id])
+    {:ok, _sender} = PeerConnection.add_track(pc, audio_track)
+
+    audio_track.id
   end
 end

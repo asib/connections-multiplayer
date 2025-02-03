@@ -7,6 +7,7 @@ export function createPlayerHook(iceServers = []) {
 
             console.log(`${new Date().toISOString()}: Creating peer connection`);
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
+            this.pc.addTransceiver("audio", { direction: "recvonly" });
 
             this.pc.onicecandidate = (ev) => {
                 console.log(`${new Date().toISOString()}: Sending ICE candidate`);

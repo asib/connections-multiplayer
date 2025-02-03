@@ -3,12 +3,12 @@ export function createPublisherHook(iceServers = []) {
         async mounted() {
             const view = this;
 
-            this.el.querySelectorAll("#frequency-buttons>button").forEach((button) => {
-                button.addEventListener("click", () => {
-                    const frequency = parseInt(button.textContent);
-                    view.pc.getSenders()[0].replaceTrack(view.createSineWaveTrack(frequency));
-                });
-            });
+            // this.el.querySelectorAll("#frequency-buttons>button").forEach((button) => {
+            //     button.addEventListener("click", () => {
+            //         const frequency = parseInt(button.textContent);
+            //         view.pc.getSenders()[0].replaceTrack(view.createSineWaveTrack(frequency));
+            //     });
+            // });
 
             view.toggleVoiceChatButton = document.getElementById("toggle-voice-chat");
             view.toggleVoiceChatButton.addEventListener("click", async () => {
@@ -80,8 +80,8 @@ export function createPublisherHook(iceServers = []) {
             };
 
             console.log(`${new Date().toISOString()}: Adding track to peer connection`);
-            // view.pc.addTrack(view.localStream.getAudioTracks()[0], view.localStream);
-            view.pc.addTrack(view.createSineWaveTrack());
+            view.pc.addTrack(view.localStream.getAudioTracks()[0], view.localStream);
+            // view.pc.addTrack(view.createSineWaveTrack());
 
             console.log(`${new Date().toISOString()}: Creating offer`);
             const offer = await view.pc.createOffer();

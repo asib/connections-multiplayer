@@ -104,11 +104,11 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   def render(assigns) do
     ~H"""
     <div id={@publisher.id} phx-hook="Publisher" class="fixed bottom-4 right-4 flex flex-col gap-2">
-      <div id="frequency-buttons">
+      <!-- <div id="frequency-buttons">
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">196</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">220</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">247</button>
-      </div>
+      </div> -->
       <button
         id="toggle-voice-chat"
         class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80 w-fit self-end"

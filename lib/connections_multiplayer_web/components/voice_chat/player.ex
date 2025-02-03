@@ -337,31 +337,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   @impl true
-  def handle_event("querying-transceivers", _params, socket) do
+  def handle_event("offer", unsigned_params, socket) do
+    %{player: player} = socket.assigns
+
     {:ok, pc} = spawn_peer_connection(socket)
 
     {:ok, publishers} =
       VoiceChatMux.add_listener_to_game_and_subscribe(socket.assigns.room_id, pc)
-
-    socket =
-      assign(socket,
-        player: %__MODULE__{
-          socket.assigns.player
-          | pc: pc,
-            publishers: publishers,
-            is_negotiating_setup?: true
-        }
-      )
-
-    {:reply,
-     %{
-       "numTransceivers" => Enum.count(publishers)
-     }, socket}
-  end
-
-  @impl true
-  def handle_event("offer", unsigned_params, socket) do
-    %{player: %{pc: pc, publishers: publishers} = player} = socket.assigns
 
     offer = SessionDescription.from_json(unsigned_params)
     :ok = PeerConnection.set_remote_description(pc, offer)
@@ -375,7 +357,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     new_player = %__MODULE__{
       player
       | pc: pc,
-        publisher_to_audio_track_id: publisher_to_audio_track_id
+        publishers: publishers,
+        publisher_to_audio_track_id: publisher_to_audio_track_id,
+        is_negotiating_setup?: true
     }
 
     {:noreply,

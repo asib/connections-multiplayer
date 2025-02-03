@@ -50,13 +50,6 @@ export function createPlayerHook(iceServers = []) {
                 console.log(`${new Date().toISOString()}: got offer`);
                 await this.pc.setRemoteDescription(offer);
 
-                const missingTransceivers = numTransceivers - this.pc.getTransceivers().length;
-
-                console.log(`${new Date().toISOString()}: adding ${missingTransceivers} transceivers`);
-                for (let i = 0; i < missingTransceivers; i++) {
-                    this.pc.addTransceiver("audio", { direction: "recvonly" });
-                }
-
                 const answer = await this.pc.createAnswer();
                 await this.pc.setLocalDescription(answer);
 
@@ -64,23 +57,11 @@ export function createPlayerHook(iceServers = []) {
                 this.pushEventTo(this.el, "answer", answer);
             });
 
-            console.log(`${new Date().toISOString()}: querying transceivers`);
-            this.pushEventTo(this.el, "querying-transceivers", {}, async ({ numTransceivers }) => {
-                const missingTransceivers = numTransceivers - this.pc.getTransceivers().length;
+            const offer = await this.pc.createOffer();
+            await this.pc.setLocalDescription(offer);
 
-                console.log(`${new Date().toISOString()}: adding ${missingTransceivers} transceivers`);
-                for (let i = 0; i < missingTransceivers; i++) {
-                    this.pc.addTransceiver("audio", { direction: "recvonly" });
-                }
-
-                const offer = await this.pc.createOffer({ offerToReceiveAudio: true });
-                await this.pc.setLocalDescription(offer);
-
-                console.log(`${new Date().toISOString()}: transceiver count: ${this.pc.getTransceivers().length}`);
-
-                console.log(`${new Date().toISOString()}: sending offer`);
-                this.pushEventTo(this.el, "offer", offer);
-            });
+            console.log(`${new Date().toISOString()}: sending offer`);
+            this.pushEventTo(this.el, "offer", offer);
         },
 
         setupMuteButton() {

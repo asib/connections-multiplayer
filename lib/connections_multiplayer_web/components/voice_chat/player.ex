@@ -217,7 +217,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
       socket
       |> push_event("offer-#{player.id}", %{
         offer: SessionDescription.to_json(offer),
-        numTransceivers: Enum.count(dbg(player.publishers))
+        numTransceivers: Enum.count(player.publishers)
       })
 
     {:noreply, socket}
@@ -307,7 +307,11 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
               player.pc
               |> PeerConnection.get_transceivers()
               |> Enum.find(fn transceiver -> get_in(transceiver.sender.track.id) == track_id end)} do
-        :ok = PeerConnection.stop_transceiver(player.pc, transceiver.id)
+        Logger.info(
+          "#{__MODULE__} #{inspect(self())}: stopping transceiver #{inspect(transceiver.id)}"
+        )
+
+        :ok = PeerConnection.remove_track(player.pc, transceiver.sender.id)
 
         %__MODULE__{
           player

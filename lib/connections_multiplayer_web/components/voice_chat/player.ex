@@ -208,6 +208,17 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
   def handle_info({:ex_webrtc, _pid, :negotiation_needed}, socket) do
     Logger.info("#{__MODULE__} #{inspect(self())}: negotiation needed")
+    %{player: player} = socket.assigns
+
+    {:ok, offer} = PeerConnection.create_offer(player.pc)
+    PeerConnection.set_local_description(player.pc, offer)
+
+    socket =
+      socket
+      |> push_event("offer-#{player.id}", %{
+        offer: SessionDescription.to_json(offer),
+        numTransceivers: Enum.count(player.publishers)
+      })
 
     {:noreply, socket}
   end
@@ -288,7 +299,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   @impl true
-  def handle_event("soliciting-offer", _params, socket) do
+  def handle_event("querying-transceivers", _params, socket) do
     {:ok, pc} = spawn_peer_connection(socket)
 
     {:ok, publishers} =
@@ -306,7 +317,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
     {:reply,
      %{
-       "num_transceivers" => Enum.count(publishers)
+       "numTransceivers" => Enum.count(publishers)
      }, socket}
   end
 
@@ -333,6 +344,16 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
      socket
      |> assign(player: new_player)
      |> push_event("answer-#{player.id}", SessionDescription.to_json(answer))}
+  end
+
+  @impl true
+  def handle_event("answer", unsigned_params, socket) do
+    %{player: player} = socket.assigns
+
+    offer = SessionDescription.from_json(unsigned_params)
+    :ok = PeerConnection.set_remote_description(player.pc, offer)
+
+    {:noreply, socket}
   end
 
   @impl true

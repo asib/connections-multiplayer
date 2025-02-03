@@ -34,27 +34,47 @@ export function createPlayerHook(iceServers = []) {
                 console.log(`${new Date().toISOString()}: Negotiation needed: ${JSON.stringify(ev)}`);
             };
 
-            const eventName = "answer" + "-" + this.el.id;
-            this.handleEvent(eventName, async (answer) => {
-                console.log(`${new Date().toISOString()}: Got offer answer`);
+            this.handleEvent(`answer-${this.el.id}`, async (answer) => {
+                console.log(`${new Date().toISOString()}: got offer answer`);
                 await this.pc.setRemoteDescription(answer);
 
-                console.log(`${new Date().toISOString()}: Pushing negotiation complete`);
+                console.log(`${new Date().toISOString()}: confirming negotiation complete`);
                 this.pushEventTo(this.el, "negotiation-complete", {});
             });
 
-            console.log(`${new Date().toISOString()}: Soliciting offer`);
-            this.pushEventTo(this.el, "soliciting-offer", {}, async ({ num_transceivers }) => {
-                console.log(`${new Date().toISOString()}: Adding ${num_transceivers} transceivers`);
-                for (let i = 0; i < num_transceivers; i++) {
+            console.log(`${new Date().toISOString()}: querying transceivers`);
+            this.pushEventTo(this.el, "querying-transceivers", {}, async ({ numTransceivers }) => {
+                const missingTransceivers = numTransceivers - this.pc.getTransceivers().length;
+
+                console.log(`${new Date().toISOString()}: adding ${missingTransceivers} transceivers`);
+                for (let i = 0; i < missingTransceivers; i++) {
                     this.pc.addTransceiver("audio", { direction: "recvonly" });
                 }
 
                 const offer = await this.pc.createOffer({ offerToReceiveAudio: true });
                 await this.pc.setLocalDescription(offer);
 
-                console.log(`${new Date().toISOString()}: Pushing offer`);
+                console.log(`${new Date().toISOString()}: sending offer`);
                 this.pushEventTo(this.el, "offer", offer);
+            });
+
+
+            this.handleEvent(`offer-${this.el.id}`, async ({ offer, numTransceivers }) => {
+                console.log(`${new Date().toISOString()}: got offer`);
+                await this.pc.setRemoteDescription(offer);
+
+                const missingTransceivers = numTransceivers - this.pc.getTransceivers().length;
+
+                console.log(`${new Date().toISOString()}: adding ${missingTransceivers} transceivers`);
+                for (let i = 0; i < missingTransceivers; i++) {
+                    this.pc.addTransceiver("audio", { direction: "recvonly" });
+                }
+
+                const answer = await this.pc.createAnswer();
+                await this.pc.setLocalDescription(answer);
+
+                console.log(`${new Date().toISOString()}: sending answer`);
+                this.pushEventTo(this.el, "answer", answer);
             });
         },
 

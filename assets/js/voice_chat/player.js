@@ -5,38 +5,33 @@ export function createPlayerHook(iceServers = []) {
 
             this.setupMuteButton();
 
-            console.log(`${new Date().toISOString()}: Creating peer connection`);
+            console.log(`${new Date().toISOString()}: creating peer connection`);
             this.pc = new RTCPeerConnection({ iceServers: iceServers });
             this.pc.addTransceiver("audio", { direction: "recvonly" });
 
             this.pc.onicecandidate = (ev) => {
-                console.log(`${new Date().toISOString()}: Sending ICE candidate`);
+                console.log(`${new Date().toISOString()}: sending ICE candidate`);
                 this.pushEventTo(this.el, "ice", JSON.stringify(ev.candidate));
             };
 
             this.pc.ontrack = (event) => {
-                console.log(`${new Date().toISOString()}: Received track, creating audio element`);
+                console.log(`${new Date().toISOString()}: received track, creating audio element`);
 
                 const trackId = event.track.id;
                 const audioPlayer = document.createElement('audio');
                 audioPlayer.srcObject = event.streams[0];
                 audioPlayer.autoplay = true;
-                audioPlayer.muted = false;
 
                 audioPlayerWrapper.appendChild(audioPlayer);
 
                 event.track.onended = (_) => {
-                    console.log(`${new Date().toISOString()}: Track ended: ${trackId}`);
+                    console.log(`${new Date().toISOString()}: track ended: ${trackId}`);
                     audioPlayerWrapper.removeChild(audioPlayer);
                     this.pc.getSenders().filter((sender) => sender.track?.id === trackId).forEach((sender) => {
                         this.pc.removeTrack(sender);
                     })
                 }
             }
-
-            this.pc.onnegotiationneeded = (ev) => {
-                console.log(`${new Date().toISOString()}: Negotiation needed: ${JSON.stringify(ev)}`);
-            };
 
             this.handleEvent(`answer-${this.el.id}`, async (answer) => {
                 console.log(`${new Date().toISOString()}: got offer answer`);
@@ -46,7 +41,7 @@ export function createPlayerHook(iceServers = []) {
                 this.pushEventTo(this.el, "negotiation-complete", {});
             });
 
-            this.handleEvent(`offer-${this.el.id}`, async ({ offer, numTransceivers }) => {
+            this.handleEvent(`offer-${this.el.id}`, async (offer) => {
                 console.log(`${new Date().toISOString()}: got offer`);
                 await this.pc.setRemoteDescription(offer);
 

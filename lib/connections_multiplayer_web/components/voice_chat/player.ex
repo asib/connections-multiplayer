@@ -215,10 +215,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
     socket =
       socket
-      |> push_event("offer-#{player.id}", %{
-        offer: SessionDescription.to_json(offer),
-        numTransceivers: Enum.count(player.publishers)
-      })
+      |> push_event("offer-#{player.id}", SessionDescription.to_json(offer))
 
     {:noreply, socket}
   end

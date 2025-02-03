@@ -27,7 +27,10 @@ export function createPlayerHook(iceServers = []) {
                 event.track.onended = (_) => {
                     console.log(`${new Date().toISOString()}: Track ended: ${trackId}`);
                     audioPlayerWrapper.removeChild(audioPlayer);
-                };
+                    this.pc.getSenders().filter((sender) => sender.track?.id === trackId).forEach((sender) => {
+                        this.pc.removeTrack(sender);
+                    })
+                }
             }
 
             this.pc.onnegotiationneeded = (ev) => {
@@ -41,23 +44,6 @@ export function createPlayerHook(iceServers = []) {
                 console.log(`${new Date().toISOString()}: confirming negotiation complete`);
                 this.pushEventTo(this.el, "negotiation-complete", {});
             });
-
-            console.log(`${new Date().toISOString()}: querying transceivers`);
-            this.pushEventTo(this.el, "querying-transceivers", {}, async ({ numTransceivers }) => {
-                const missingTransceivers = numTransceivers - this.pc.getTransceivers().length;
-
-                console.log(`${new Date().toISOString()}: adding ${missingTransceivers} transceivers`);
-                for (let i = 0; i < missingTransceivers; i++) {
-                    this.pc.addTransceiver("audio", { direction: "recvonly" });
-                }
-
-                const offer = await this.pc.createOffer({ offerToReceiveAudio: true });
-                await this.pc.setLocalDescription(offer);
-
-                console.log(`${new Date().toISOString()}: sending offer`);
-                this.pushEventTo(this.el, "offer", offer);
-            });
-
 
             this.handleEvent(`offer-${this.el.id}`, async ({ offer, numTransceivers }) => {
                 console.log(`${new Date().toISOString()}: got offer`);
@@ -75,6 +61,24 @@ export function createPlayerHook(iceServers = []) {
 
                 console.log(`${new Date().toISOString()}: sending answer`);
                 this.pushEventTo(this.el, "answer", answer);
+            });
+
+            console.log(`${new Date().toISOString()}: querying transceivers`);
+            this.pushEventTo(this.el, "querying-transceivers", {}, async ({ numTransceivers }) => {
+                const missingTransceivers = numTransceivers - this.pc.getTransceivers().length;
+
+                console.log(`${new Date().toISOString()}: adding ${missingTransceivers} transceivers`);
+                for (let i = 0; i < missingTransceivers; i++) {
+                    this.pc.addTransceiver("audio", { direction: "recvonly" });
+                }
+
+                const offer = await this.pc.createOffer({ offerToReceiveAudio: true });
+                await this.pc.setLocalDescription(offer);
+
+                console.log(`${new Date().toISOString()}: transceiver count: ${this.pc.getTransceivers().length}`);
+
+                console.log(`${new Date().toISOString()}: sending offer`);
+                this.pushEventTo(this.el, "offer", offer);
             });
         },
 

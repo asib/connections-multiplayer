@@ -217,7 +217,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
       socket
       |> push_event("offer-#{player.id}", %{
         offer: SessionDescription.to_json(offer),
-        numTransceivers: Enum.count(player.publishers)
+        numTransceivers: Enum.count(dbg(player.publishers))
       })
 
     {:noreply, socket}
@@ -249,10 +249,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
           )
 
         audio_track_id ->
-          Logger.info(
-            "#{__MODULE__} #{inspect(self())}: sending audio packet to #{audio_track_id}"
-          )
-
           PeerConnection.send_rtp(player.pc, audio_track_id, packet)
       end
     else
@@ -287,7 +283,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     new_player = %__MODULE__{
       player
       | publisher_to_audio_track_id:
-          Map.put(player.publisher_to_audio_track_id, publisher_pid, audio_track_id)
+          Map.put(player.publisher_to_audio_track_id, publisher_pid, audio_track_id),
+        publishers: MapSet.put(player.publishers, publisher_pid)
     }
 
     {:noreply, assign(socket, :player, new_player)}
@@ -295,6 +292,43 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
   @impl true
   def handle_info({:listener_added, _listener_pid}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:publisher_removed, publisher_pid}, socket) do
+    %{player: player} = socket.assigns
+
+    new_player =
+      with {:get_audio_track_id, track_id} when track_id != nil <-
+             {:get_audio_track_id, player.publisher_to_audio_track_id[publisher_pid]},
+           {:get_transceiver_for_audio_track, transceiver} when transceiver != nil <-
+             {:get_transceiver_for_audio_track,
+              player.pc
+              |> PeerConnection.get_transceivers()
+              |> Enum.find(fn transceiver -> get_in(transceiver.sender.track.id) == track_id end)} do
+        :ok = PeerConnection.stop_transceiver(player.pc, transceiver.id)
+
+        %__MODULE__{
+          player
+          | publisher_to_audio_track_id:
+              Map.delete(player.publisher_to_audio_track_id, publisher_pid),
+            publishers: MapSet.delete(player.publishers, publisher_pid)
+        }
+      else
+        error ->
+          Logger.error(
+            "#{__MODULE__} #{inspect(self())}: error removing track for publisher #{inspect(publisher_pid)}: #{inspect(error)}"
+          )
+
+          player
+      end
+
+    {:noreply, assign(socket, :player, new_player)}
+  end
+
+  @impl true
+  def handle_info({:listener_removed, _listener_pid}, socket) do
     {:noreply, socket}
   end
 

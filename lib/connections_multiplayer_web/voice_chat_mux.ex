@@ -65,13 +65,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
       update_in(state, [type, game_id], &MapSet.delete(&1, pid))
       |> then(fn state -> update_in(state.peers, &Map.delete(&1, pid)) end)
 
-    type_singular =
+    event =
       case type do
-        :publishers -> "publisher"
-        :listeners -> "listener"
+        :publishers -> :publisher_removed
+        :listeners -> :listener_removed
       end
 
-    broadcast(game_id, {type_singular <> "_removed", pid})
+    broadcast(game_id, {event, pid})
 
     {:noreply, new_state}
   end

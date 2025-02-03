@@ -25,12 +25,7 @@ defmodule ConnectionsMultiplayerWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   @impl true
-  def connect(%{"avatar" => avatar, "colour" => colour}, socket, _connect_info) do
-    socket =
-      socket
-      |> assign(:avatar, avatar)
-      |> assign(:colour, colour)
-
+  def connect(_params, socket, _connect_info) do
     {:ok, socket}
   end
 

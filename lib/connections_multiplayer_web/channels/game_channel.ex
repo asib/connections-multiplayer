@@ -4,7 +4,12 @@ defmodule ConnectionsMultiplayerWeb.GameChannel do
   alias ConnectionsMultiplayerWeb.Presence
 
   @impl true
-  def join("game:" <> _game_id, _params, socket) do
+  def join("game:" <> _game_id, %{"avatar" => avatar, "colour" => colour}, socket) do
+    socket =
+      socket
+      |> assign(:avatar, avatar)
+      |> assign(:colour, colour)
+
     send(self(), :after_join)
     {:ok, socket}
   end

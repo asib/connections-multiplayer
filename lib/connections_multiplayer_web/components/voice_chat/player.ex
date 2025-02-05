@@ -368,20 +368,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   @impl true
-  def handle_event("ice", "null", socket) do
-    %{player: player} = socket.assigns
-
-    case player do
-      %__MODULE__{pc: nil} ->
-        {:noreply, socket}
-
-      %__MODULE__{pc: pc} ->
-        :ok = PeerConnection.add_ice_candidate(pc, %ICECandidate{candidate: ""})
-        {:noreply, socket}
-    end
-  end
-
-  @impl true
   def handle_event("ice", unsigned_params, socket) do
     %{player: player} = socket.assigns
 
@@ -391,9 +377,15 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
       %__MODULE__{pc: pc} ->
         cand =
-          unsigned_params
-          |> Jason.decode!()
-          |> ExWebRTC.ICECandidate.from_json()
+          case unsigned_params do
+            "null" ->
+              %ICECandidate{candidate: ""}
+
+            _ ->
+              unsigned_params
+              |> Jason.decode!()
+              |> ExWebRTC.ICECandidate.from_json()
+          end
 
         :ok = PeerConnection.add_ice_candidate(pc, cand)
 

@@ -4,7 +4,7 @@
 #
 
 app = 'connections-multiplayer'
-primary_region = 'sjc'
+primary_region = 'ord'
 kill_signal = 'SIGTERM'
 
 [build]

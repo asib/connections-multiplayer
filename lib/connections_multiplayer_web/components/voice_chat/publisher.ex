@@ -3,7 +3,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   use ConnectionsMultiplayerWeb, :live_view
 
   alias ExWebRTC.{ICECandidate, PeerConnection, SessionDescription}
-  alias Phoenix.PubSub
 
   @type on_connected() :: (publisher_id :: String.t() -> any())
 
@@ -158,12 +157,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   def handle_info({:ex_webrtc, _pc, {:rtp, track_id, nil, packet}}, socket) do
     %{publisher: %__MODULE__{audio_track_id: ^track_id} = publisher} = socket.assigns
 
-    PubSub.broadcast(
-      publisher.pubsub,
-      "streams:audio:#{socket.assigns.room_id}",
-      {:live_ex_webrtc, :audio,
-       %{publisher_id: publisher.id, packet: packet, publisher_pid: publisher.pc}}
-    )
+    :ok =
+      VoiceChatMux.broadcast_packet(socket.assigns.room_id, publisher.pc, publisher.id, packet)
 
     if publisher.on_packet, do: publisher.on_packet.(publisher.id, :audio, packet, socket)
     {:noreply, socket}
@@ -201,7 +196,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
         audio_track_id: audio_track.id
     }
 
-    VoiceChatMux.add_publisher_to_game(socket.assigns.room_id, pc)
+    VoiceChatMux.add_publisher_to_game(dbg(socket.assigns.room_id), pc)
 
     {:noreply,
      socket

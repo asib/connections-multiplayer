@@ -67,10 +67,11 @@ export function createPublisherHook(iceServers = []) {
             // handle local events
             view.pc.onconnectionstatechange = () => {
                 if (view.pc.connectionState === "connected") {
-                    console.log(`${new Date().toISOString()}: Peer connection connected. Starting streaming`);
+                    console.log(`${new Date().toISOString()}: peer connection connected, starting streaming`);
                 } else if (view.pc.connectionState === "failed") {
-                    console.log(`${new Date().toISOString()}: Peer connection failed. Stopping streaming`);
-                    view.stopStreaming(view);
+                    console.log(`${new Date().toISOString()}: peer connection failed, restarting ICE`);
+                    view.pc.restartIce();
+                    // view.stopStreaming(view);
                 }
             };
 

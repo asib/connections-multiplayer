@@ -21,6 +21,7 @@ export function createPlayerHook(iceServers = []) {
                 const audioPlayer = document.createElement('audio');
                 audioPlayer.srcObject = event.streams[0];
                 audioPlayer.autoplay = true;
+                audioPlayer.muted = false;
 
                 audioPlayerWrapper.appendChild(audioPlayer);
 

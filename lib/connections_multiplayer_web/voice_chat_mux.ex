@@ -3,6 +3,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
 
   alias Phoenix.PubSub
 
+  require Logger
+
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -11,13 +13,16 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     GenServer.call(__MODULE__, {:add_publisher_to_game, game_id, publisher_pid})
   end
 
-  def add_listener_to_game_and_subscribe(game_id, listener_pid) do
-    subscribe(game_id)
-    GenServer.call(__MODULE__, {:add_listener_to_game, game_id, listener_pid})
+  def add_listener_to_game_and_subscribe(game_id) do
+    :ok = subscribe(game_id)
+    GenServer.call(__MODULE__, {:add_listener_to_game, game_id})
   end
 
-  def broadcast_packet(game_id, from_pid, packet) do
-    broadcast(game_id, {:packet, from_pid, packet})
+  def broadcast_packet(game_id, from_pid, from_publisher_id, packet) do
+    broadcast(
+      game_id,
+      {:packet, %{publisher_pid: from_pid, publisher_id: from_publisher_id, packet: packet}}
+    )
   end
 
   def subscribe(game_id) do
@@ -25,53 +30,45 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
   end
 
   def init(_) do
-    {:ok, %{publishers: %{}, listeners: %{}, peers: %{}}}
+    {:ok, %{publishers: %{}, peers: %{}}}
   end
 
   def handle_call({:add_publisher_to_game, game_id, publisher_pid}, _from, state) do
     Process.monitor(publisher_pid)
     broadcast(game_id, {:publisher_added, publisher_pid})
 
-    {:reply, :ok,
-     %{
-       update_in(
-         state,
-         [:publishers, Access.key(game_id, MapSet.new())],
-         &MapSet.put(&1, publisher_pid)
-       )
-       | peers: Map.put(state.peers, publisher_pid, %{game_id: game_id, type: :publishers})
-     }}
+    new_state =
+      %{
+        update_in(
+          state,
+          [:publishers, Access.key(game_id, MapSet.new())],
+          &MapSet.put(&1, publisher_pid)
+        )
+        | peers: Map.put(state.peers, publisher_pid, %{game_id: game_id, type: :publishers})
+      }
+
+    dbg({self(), state, new_state})
+
+    {:reply, :ok, new_state}
   end
 
-  def handle_call({:add_listener_to_game, game_id, listener_pid}, _from, state) do
-    Process.monitor(listener_pid)
-    broadcast(game_id, {:listener_added, listener_pid})
+  def handle_call({:add_listener_to_game, game_id}, _from, state) do
+    publishers_for_game_id =
+      get_in(state.publishers, [Access.key(game_id, MapSet.new())])
 
-    {:reply, {:ok, get_in(state.publishers, [Access.key(game_id, MapSet.new())])},
-     %{
-       update_in(
-         state,
-         [:listeners, Access.key(game_id, MapSet.new())],
-         &MapSet.put(&1, listener_pid)
-       )
-       | peers: Map.put(state.peers, listener_pid, %{game_id: game_id, type: :listeners})
-     }}
+    {:reply, {:ok, publishers_for_game_id}, state}
   end
 
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
-    %{game_id: game_id, type: type} = Map.get(state.peers, pid)
+    %{game_id: game_id, type: :publishers} = Map.get(state.peers, pid)
 
     new_state =
-      update_in(state, [type, game_id], &MapSet.delete(&1, pid))
+      update_in(state, [:publishers, Access.key(game_id, MapSet.new())], &MapSet.delete(&1, pid))
       |> then(fn state -> update_in(state.peers, &Map.delete(&1, pid)) end)
 
-    event =
-      case type do
-        :publishers -> :publisher_removed
-        :listeners -> :listener_removed
-      end
+    dbg({self(), state, new_state})
 
-    broadcast(game_id, {event, pid})
+    broadcast(game_id, {:publisher_removed, pid})
 
     {:noreply, new_state}
   end

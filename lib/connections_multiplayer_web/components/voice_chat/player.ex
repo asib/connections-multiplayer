@@ -1,6 +1,8 @@
 defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
-  alias ConnectionsMultiplayerWeb.VoiceChatMux
   use ConnectionsMultiplayerWeb, :live_view
+
+  alias ExWebRTC.{ICECandidate, MediaStreamTrack, PeerConnection, SessionDescription}
+  alias ConnectionsMultiplayerWeb.VoiceChatMux
 
   require Logger
 
@@ -29,9 +31,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
             ice_port_range: nil,
             audio_codecs: nil,
             pc_genserver_opts: nil
-
-  alias ExWebRTC.{ICECandidate, MediaStreamTrack, PeerConnection, SessionDescription}
-  alias Phoenix.PubSub
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -196,11 +195,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
 
     Logger.info("#{__MODULE__} #{inspect(self())}: subscribing to pubsub")
 
-    PubSub.subscribe(
-      player.pubsub,
-      "streams:audio:#{socket.assigns.room_id}"
-    )
-
     if player.on_connected, do: player.on_connected.(player.publisher_id)
 
     {:noreply, socket}
@@ -225,15 +219,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   def handle_info(
-        {:live_ex_webrtc, :audio,
-         %{publisher_id: publisher_id, packet: packet, publisher_pid: publisher_pid}},
+        {:packet, %{publisher_id: publisher_id, packet: packet, publisher_pid: publisher_pid}},
         socket
       ) do
     %{player: player} = socket.assigns
 
     if player.publisher_id != publisher_id do
-      # Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from #{publisher_id}")
-
       packet =
         if player.on_packet,
           do: player.on_packet.(player.publisher_id, :audio, packet, socket),
@@ -248,9 +239,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
         audio_track_id ->
           PeerConnection.send_rtp(player.pc, audio_track_id, packet)
       end
-    else
-      # Logger.info("#{__MODULE__} #{inspect(self())}: received audio packet from self")
-      nil
     end
 
     {:noreply, socket}
@@ -288,11 +276,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
   end
 
   @impl true
-  def handle_info({:listener_added, _listener_pid}, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
   def handle_info({:publisher_removed, publisher_pid}, socket) do
     %{player: player} = socket.assigns
 
@@ -304,9 +287,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
               player.pc
               |> PeerConnection.get_transceivers()
               |> Enum.find(fn transceiver -> get_in(transceiver.sender.track.id) == track_id end)} do
-        Logger.info(
-          "#{__MODULE__} #{inspect(self())}: stopping transceiver #{inspect(transceiver.id)}"
-        )
+        Logger.info("#{__MODULE__} #{inspect(self())}: removing track")
 
         :ok = PeerConnection.remove_track(player.pc, transceiver.sender.id)
 
@@ -340,7 +321,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     {:ok, pc} = spawn_peer_connection(socket)
 
     {:ok, publishers} =
-      VoiceChatMux.add_listener_to_game_and_subscribe(socket.assigns.room_id, pc)
+      VoiceChatMux.add_listener_to_game_and_subscribe(dbg(socket.assigns.room_id))
+
+    dbg(publishers)
 
     offer = SessionDescription.from_json(unsigned_params)
     :ok = PeerConnection.set_remote_description(pc, offer)

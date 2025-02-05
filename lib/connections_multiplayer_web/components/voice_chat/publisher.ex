@@ -196,7 +196,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
         audio_track_id: audio_track.id
     }
 
-    VoiceChatMux.add_publisher_to_game(dbg(socket.assigns.room_id), pc)
+    VoiceChatMux.add_publisher_to_game(dbg(socket.assigns.room_id), pc, publisher.id)
 
     {:noreply,
      socket

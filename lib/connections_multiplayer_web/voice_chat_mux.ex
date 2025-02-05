@@ -9,13 +9,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def add_publisher_to_game(game_id, publisher_pid) do
-    GenServer.call(__MODULE__, {:add_publisher_to_game, game_id, publisher_pid})
+  def add_publisher_to_game(game_id, publisher_pid, publisher_id) do
+    GenServer.call(__MODULE__, {:add_publisher_to_game, game_id, publisher_pid, publisher_id})
   end
 
-  def add_listener_to_game_and_subscribe(game_id) do
-    :ok = subscribe(game_id)
-    GenServer.call(__MODULE__, {:add_listener_to_game, game_id})
+  def get_publishers_for_game(game_id) do
+    GenServer.call(__MODULE__, {:get_publishers_for_game, game_id})
   end
 
   def broadcast_packet(game_id, from_pid, from_publisher_id, packet) do
@@ -33,9 +32,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     {:ok, %{publishers: %{}, peers: %{}}}
   end
 
-  def handle_call({:add_publisher_to_game, game_id, publisher_pid}, _from, state) do
+  def handle_call({:add_publisher_to_game, game_id, publisher_pid, publisher_id}, _from, state) do
     Process.monitor(publisher_pid)
-    broadcast(game_id, {:publisher_added, publisher_pid})
+    broadcast(game_id, {:publisher_added, publisher_pid, publisher_id})
 
     new_state =
       %{
@@ -52,7 +51,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:add_listener_to_game, game_id}, _from, state) do
+  def handle_call({:get_publishers_for_game, game_id}, _from, state) do
     publishers_for_game_id =
       get_in(state.publishers, [Access.key(game_id, MapSet.new())])
 

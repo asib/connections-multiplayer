@@ -9,8 +9,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def add_publisher_to_game(game_id, publisher_pid, publisher_id) do
-    GenServer.call(__MODULE__, {:add_publisher_to_game, game_id, publisher_pid, publisher_id})
+  def add_publisher_to_game(game_id, publisher_pid) do
+    GenServer.call(__MODULE__, {:add_publisher_to_game, game_id, publisher_pid})
   end
 
   def get_publishers_for_game(game_id) do
@@ -32,9 +32,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     {:ok, %{publishers: %{}, peers: %{}}}
   end
 
-  def handle_call({:add_publisher_to_game, game_id, publisher_pid, publisher_id}, _from, state) do
+  def handle_call({:add_publisher_to_game, game_id, publisher_pid}, _from, state) do
     Process.monitor(publisher_pid)
-    broadcast(game_id, {:publisher_added, publisher_pid, publisher_id})
+    broadcast(game_id, {:publisher_added, publisher_pid})
 
     new_state =
       %{
@@ -45,8 +45,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
         )
         | peers: Map.put(state.peers, publisher_pid, %{game_id: game_id, type: :publishers})
       }
-
-    dbg({self(), state, new_state})
 
     {:reply, :ok, new_state}
   end
@@ -64,8 +62,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
     new_state =
       update_in(state, [:publishers, Access.key(game_id, MapSet.new())], &MapSet.delete(&1, pid))
       |> then(fn state -> update_in(state.peers, &Map.delete(&1, pid)) end)
-
-    dbg({self(), state, new_state})
 
     broadcast(game_id, {:publisher_removed, pid})
 

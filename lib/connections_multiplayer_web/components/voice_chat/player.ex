@@ -325,11 +325,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Player do
     :ok = PeerConnection.set_remote_description(pc, offer)
 
     publisher_to_audio_track_id =
-      dbg(
-        publishers
-        |> Enum.filter(&(&1 != player.publisher_id))
-        |> Map.new(&{&1, add_new_audio_track(pc)})
-      )
+      publishers
+      |> Enum.filter(&(&1 != player.publisher_id))
+      |> Map.new(&{&1, add_new_audio_track(pc)})
 
     {:ok, answer} = PeerConnection.create_answer(pc)
     :ok = PeerConnection.set_local_description(pc, answer)

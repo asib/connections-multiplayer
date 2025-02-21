@@ -1,31 +1,25 @@
-defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
-  alias ConnectionsMultiplayerWeb.VoiceChatMux
+defmodule ConnectionsMultiplayerWeb.VoiceChat do
   use ConnectionsMultiplayerWeb, :live_view
 
-  alias ExWebRTC.{ICECandidate, PeerConnection, SessionDescription}
+  require Logger
 
-  @type on_connected() :: (publisher_id :: String.t() -> any())
-
-  @type on_packet() ::
-          (publisher_id :: String.t(),
-           packet_type :: :audio | :video,
-           packet :: ExRTP.Packet.t(),
-           socket :: Phoenix.LiveView.Socket.t() ->
-             packet :: ExRTP.Packet.t())
+  alias ExWebRTC.{ICECandidate, MediaStreamTrack, PeerConnection, SessionDescription}
+  alias ConnectionsMultiplayerWeb.VoiceChatMux
 
   @type t() :: struct()
 
   defstruct id: nil,
             pc: nil,
             audio_track_id: nil,
-            on_packet: nil,
-            on_connected: nil,
             pubsub: nil,
             ice_servers: nil,
             ice_ip_filter: nil,
             ice_port_range: nil,
             audio_codecs: nil,
-            pc_genserver_opts: nil
+            pc_genserver_opts: nil,
+            is_negotiating_setup?: true,
+            pending_publisher_pids: [],
+            publisher_to_audio_track_id: nil
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -56,8 +50,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
         :id,
         :name,
         :pubsub,
-        :on_packet,
-        :on_connected,
         :ice_servers,
         :ice_ip_filter,
         :ice_port_range,
@@ -68,8 +60,6 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     publisher = %__MODULE__{
       id: Keyword.fetch!(opts, :id),
       pubsub: Keyword.fetch!(opts, :pubsub),
-      on_packet: Keyword.get(opts, :on_packet),
-      on_connected: Keyword.get(opts, :on_connected),
       ice_servers: Keyword.get(opts, :ice_servers, [%{urls: "stun:stun.l.google.com:19302"}]),
       ice_ip_filter: Keyword.get(opts, :ice_ip_filter),
       ice_port_range: Keyword.get(opts, :ice_port_range),
@@ -102,12 +92,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
   @impl true
   def render(assigns) do
     ~H"""
-    <div id={@publisher.id} phx-hook="Publisher" class="fixed bottom-4 right-4 flex flex-col gap-2">
-      <!-- <div id="frequency-buttons">
+    <div id={@publisher.id} phx-hook="VoiceChat" class="fixed bottom-4 right-4 flex flex-col gap-2">
+      <div id="frequency-buttons">
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">196</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">220</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">247</button>
-      </div> -->
+      </div>
       <button
         id="toggle-voice-chat"
         class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80 w-fit self-end"
@@ -128,6 +118,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
           />
         </svg>
       </button>
+      <div id="audio-player-wrapper"></div>
     </div>
     """
   end
@@ -160,20 +151,112 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     :ok =
       VoiceChatMux.broadcast_packet(socket.assigns.room_id, publisher.pc, publisher.id, packet)
 
-    if publisher.on_packet, do: publisher.on_packet.(publisher.id, :audio, packet, socket)
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_info({:ex_webrtc, _pid, {:connection_state_change, :connected}}, socket) do
-    %{publisher: pub} = socket.assigns
-    if pub.on_connected, do: pub.on_connected.(pub.id)
     {:noreply, socket}
   end
 
   @impl true
   def handle_info({:ex_webrtc, _, _}, socket) do
     {:noreply, socket}
+  end
+
+  def handle_info(
+        {:packet, %{publisher_id: publisher_id, packet: packet, publisher_pid: publisher_pid}},
+        socket
+      ) do
+    %{publisher: publisher} = socket.assigns
+
+    if publisher.id != publisher_id do
+      case publisher.publisher_to_audio_track_id[publisher_pid] do
+        nil ->
+          Logger.error(
+            "#{__MODULE__} #{inspect(self())}: received audio packet from #{inspect(publisher_pid)} but no audio track id found: #{inspect(publisher.publisher_to_audio_track_id)}, #{inspect(publisher.pending_publisher_pids)}"
+          )
+
+        audio_track_id ->
+          PeerConnection.send_rtp(publisher.pc, audio_track_id, packet)
+      end
+    end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(
+        {:publisher_added, publisher_pid},
+        %{assigns: %{publisher: %__MODULE__{pc: publisher_pid}}} = socket
+      ) do
+    # We got a notification about ourselves being added to voice chat, ignore
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info(
+        {:publisher_added, publisher_pid},
+        %{assigns: %{publisher: %__MODULE__{is_negotiating_setup?: true}}} = socket
+      ) do
+    {:noreply,
+     assign(socket, :publisher, %{
+       socket.assigns.publisher
+       | pending_publisher_pids: [
+           socket.assigns.publisher.pending_publisher_pids | publisher_pid
+         ]
+     })}
+  end
+
+  @impl true
+  def handle_info(
+        {:publisher_added, publisher_pid},
+        %{assigns: %{publisher: %__MODULE__{is_negotiating_setup?: false}}} = socket
+      ) do
+    Logger.info("#{__MODULE__} #{inspect(self())}: adding publisher #{inspect(publisher_pid)}")
+    %{publisher: publisher} = socket.assigns
+
+    audio_track_id = add_new_audio_track(publisher.pc)
+    {:ok, offer} = PeerConnection.create_offer(publisher.pc)
+    PeerConnection.set_local_description(publisher.pc, offer)
+
+    new_publisher = %__MODULE__{
+      publisher
+      | publisher_to_audio_track_id:
+          Map.put(publisher.publisher_to_audio_track_id, publisher_pid, audio_track_id)
+    }
+
+    {:noreply,
+     assign(socket, :publisher, new_publisher)
+     |> push_event("offer-#{publisher.id}", SessionDescription.to_json(offer))}
+  end
+
+  @impl true
+  def handle_info({:publisher_removed, publisher_pid}, socket) do
+    %{publisher: publisher} = socket.assigns
+
+    new_publisher =
+      with {:get_audio_track_id, track_id} when track_id != nil <-
+             {:get_audio_track_id, publisher.publisher_to_audio_track_id[publisher_pid]},
+           {:get_transceiver_for_audio_track, transceiver} when transceiver != nil <-
+             {:get_transceiver_for_audio_track,
+              publisher.pc
+              |> PeerConnection.get_transceivers()
+              |> Enum.find(fn transceiver -> get_in(transceiver.sender.track.id) == track_id end)} do
+        Logger.info("#{__MODULE__} #{inspect(self())}: removing track")
+
+        :ok = PeerConnection.remove_track(publisher.pc, transceiver.sender.id)
+
+        %__MODULE__{
+          publisher
+          | publisher_to_audio_track_id:
+              Map.delete(publisher.publisher_to_audio_track_id, publisher_pid)
+        }
+      else
+        error ->
+          Logger.error(
+            "#{__MODULE__} #{inspect(self())}: error removing track for publisher #{inspect(publisher_pid)}: #{inspect(error)}"
+          )
+
+          publisher
+      end
+
+    {:noreply, assign(socket, :publisher, new_publisher)}
   end
 
   @impl true
@@ -185,6 +268,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
 
     [%{kind: :audio, receiver: %{track: audio_track}}] = PeerConnection.get_transceivers(pc)
 
+    {:ok, publishers} = VoiceChatMux.get_publishers_for_game(socket.assigns.room_id)
+    publisher_to_audio_track_id = Map.new(publishers, &{&1, add_new_audio_track(pc)})
+
     {:ok, answer} = PeerConnection.create_answer(pc)
     :ok = PeerConnection.set_local_description(pc, answer)
     :ok = gather_candidates(pc)
@@ -193,15 +279,59 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     new_publisher = %__MODULE__{
       publisher
       | pc: pc,
-        audio_track_id: audio_track.id
+        audio_track_id: audio_track.id,
+        publisher_to_audio_track_id: publisher_to_audio_track_id,
+        is_negotiating_setup?: true
     }
 
-    VoiceChatMux.add_publisher_to_game(socket.assigns.room_id, pc, publisher.id)
+    :ok = VoiceChatMux.add_publisher_to_game(socket.assigns.room_id, pc)
+    :ok = VoiceChatMux.subscribe(socket.assigns.room_id)
 
     {:noreply,
      socket
      |> assign(publisher: new_publisher)
      |> push_event("answer-#{publisher.id}", SessionDescription.to_json(answer))}
+  end
+
+  @impl true
+  def handle_event("answer", unsigned_params, socket) do
+    %{publisher: publisher} = socket.assigns
+
+    offer = SessionDescription.from_json(unsigned_params)
+    :ok = PeerConnection.set_remote_description(publisher.pc, offer)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("initial-negotiation-complete", _params, socket) do
+    %{publisher: publisher} = socket.assigns
+
+    Logger.info(
+      "#{__MODULE__} #{inspect(self())}: initial negotiation complete, adding pending publishers"
+    )
+
+    new_publishers_to_audio_track_ids =
+      Enum.reduce(publisher.pending_publisher_pids, %{}, fn publisher_pid, acc ->
+        Logger.info(
+          "#{__MODULE__} #{inspect(self())}: adding publisher #{inspect(publisher_pid)}"
+        )
+
+        audio_track_id = add_new_audio_track(publisher.pc)
+        Map.put(acc, publisher_pid, audio_track_id)
+      end)
+
+    new_publisher = %__MODULE__{
+      publisher
+      | publisher_to_audio_track_id:
+          Map.merge(publisher.publisher_to_audio_track_id, new_publishers_to_audio_track_ids),
+        is_negotiating_setup?: false
+    }
+
+    {:ok, offer} = PeerConnection.create_offer(publisher.pc)
+    :ok = PeerConnection.set_local_description(publisher.pc, offer)
+
+    {:noreply, assign(socket, :publisher, new_publisher)}
   end
 
   @impl true
@@ -250,7 +380,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
       ]
       |> Enum.reject(fn {_k, v} -> v == nil end)
 
-    PeerConnection.start(pc_opts, publisher.pc_genserver_opts)
+    PeerConnection.start_link(pc_opts, publisher.pc_genserver_opts)
   end
 
   defp gather_candidates(pc) do
@@ -261,5 +391,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat.Publisher do
     after
       1000 -> :ok
     end
+  end
+
+  defp add_new_audio_track(pc) do
+    stream_id = MediaStreamTrack.generate_stream_id()
+    audio_track = MediaStreamTrack.new(:audio, [stream_id])
+    {:ok, _sender} = PeerConnection.add_track(pc, audio_track)
+
+    audio_track.id
   end
 end

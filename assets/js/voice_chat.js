@@ -3,12 +3,12 @@ export function createVoiceChatHook(iceServers = []) {
         async mounted() {
             this.audioPlayerWrapper = this.el.querySelector("#audio-player-wrapper");
 
-            this.el.querySelectorAll("#frequency-buttons>button").forEach((button) => {
-                button.addEventListener("click", () => {
-                    const frequency = parseInt(button.textContent);
-                    this.pc.getSenders()[0].replaceTrack(this.createSineWaveTrack(frequency));
-                });
-            });
+            // this.el.querySelectorAll("#frequency-buttons>button").forEach((button) => {
+            //     button.addEventListener("click", () => {
+            //         const frequency = parseInt(button.textContent);
+            //         this.pc.getSenders()[0].replaceTrack(this.createSineWaveTrack(frequency));
+            //     });
+            // });
 
             this.toggleVoiceChatButton = document.getElementById("toggle-voice-chat");
             this.toggleVoiceChatButton.addEventListener("click", async () => {
@@ -17,15 +17,19 @@ export function createVoiceChatHook(iceServers = []) {
 
                     this.el.dataset.streaming = "true";
 
-                    this.toggleVoiceChatButton.classList.remove("bg-zinc-100", "hover:bg-zinc-200/80");
-                    this.toggleVoiceChatButton.classList.add("bg-green-300", "hover:bg-green-400/80");
+                    this.toggleVoiceChatButton.classList.remove("bg-blue-600", "hover:bg-blue-600/90");
+                    this.toggleVoiceChatButton.classList.add("bg-red-600", "hover:bg-red-600/90");
+                    this.toggleVoiceChatButton.querySelector("svg").classList.add("rotate-[135deg]", "translate-y-[2px]");
+                    this.pushEventTo(this.el, "toggle-voice-chat", { enabled: true });
                 } else {
                     this.stopStreaming();
 
                     this.el.dataset.streaming = "false";
 
-                    this.toggleVoiceChatButton.classList.remove("bg-green-300", "hover:bg-green-400/80");
-                    this.toggleVoiceChatButton.classList.add("bg-zinc-100", "hover:bg-zinc-200/80");
+                    this.toggleVoiceChatButton.classList.remove("bg-red-600", "hover:bg-red-600/90");
+                    this.toggleVoiceChatButton.classList.add("bg-blue-600", "hover:bg-blue-600/90");
+                    this.toggleVoiceChatButton.querySelector("svg").classList.remove("rotate-[135deg]", "translate-y-[2px]");
+                    this.pushEventTo(this.el, "toggle-voice-chat", { enabled: false });
                 }
             });
 

@@ -19,7 +19,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
             pc_genserver_opts: nil,
             is_negotiating_setup?: true,
             pending_publisher_pids: [],
-            publisher_to_audio_track_id: nil
+            publisher_to_audio_track_id: nil,
+            enabled: false
 
   attr(:socket, Phoenix.LiveView.Socket, required: true, doc: "Parent live view socket")
 
@@ -92,16 +93,20 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
   @impl true
   def render(assigns) do
     ~H"""
-    <div id={@publisher.id} phx-hook="VoiceChat" class="fixed bottom-4 right-4 flex flex-col gap-2">
-      <div id="frequency-buttons">
+    <div id={@publisher.id} phx-hook="VoiceChat" class="flex flex-col gap-2">
+      <%!-- <div id="frequency-buttons">
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">196</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">220</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">247</button>
-      </div>
+      </div> --%>
       <button
         id="toggle-voice-chat"
-        class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80 w-fit self-end"
-        aria-label="Toggle voice chat"
+        class={[
+          "rounded-full p-4 w-fit self-end",
+          !@publisher.enabled && "bg-blue-600 hover:bg-blue-600/90",
+          @publisher.enabled && "bg-red-600 hover:bg-red-600/90"
+        ]}
+        aria-label={"#{if(@publisher.enabled, do: "Leave", else: "Join")} voice chat"}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -109,12 +114,12 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="w-6 h-6"
+          class={["size-6 stroke-white", @publisher.enabled && "rotate-[135deg] translate-y-[2px]"]}
         >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
+            d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"
           />
         </svg>
       </button>
@@ -366,6 +371,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
 
         {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("toggle-voice-chat", %{"enabled" => enabled}, socket) do
+    %{publisher: publisher} = socket.assigns
+
+    {:noreply, assign(socket, :publisher, %{publisher | enabled: enabled})}
   end
 
   defp spawn_peer_connection(socket) do

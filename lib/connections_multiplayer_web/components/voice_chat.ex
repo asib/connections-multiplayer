@@ -99,30 +99,78 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">220</button>
         <button class="rounded-full p-3 bg-zinc-100 hover:bg-zinc-200/80">247</button>
       </div> --%>
-      <button
-        id="toggle-voice-chat"
-        class={[
-          "rounded-full p-4 w-fit self-end",
-          !@publisher.enabled && "bg-blue-600 hover:bg-blue-600/90",
-          @publisher.enabled && "bg-red-600 hover:bg-red-600/90"
-        ]}
-        aria-label={"#{if(@publisher.enabled, do: "Leave", else: "Join")} voice chat"}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class={["size-6 stroke-white", @publisher.enabled && "rotate-[135deg] translate-y-[2px]"]}
+      <div class="flex gap-2 self-end">
+        <%!-- <button
+          id="mute-microphone"
+          class={[
+            "rounded-full p-4 w-fit",
+            if(@publisher.enabled, do: "inline-flex gap-2 items-center sm:block", else: "hidden"),
+            if(@publisher.microphone_muted,
+              do: "bg-red-800 hover:bg-red-800/90",
+              else: "bg-gray-200 hover:bg-gray-200/80"
+            )
+          ]}
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"
-          />
-        </svg>
-      </button>
+          <p class={["sm:hidden", @publisher.microphone_muted && "text-white"]}>
+            {if(@publisher.microphone_muted, do: "Unmute", else: "Mute")} microphone
+          </p>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            class="size-6"
+          >
+            <path
+              id="microphone"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
+              class={[if(@publisher.microphone_muted, do: "stroke-white", else: "stroke-black")]}
+            />
+            <path
+              id="mute-line-margin"
+              stroke-width="5"
+              d="M2 1L22 22.5"
+              class={["stroke-red-800", !@publisher.microphone_muted && "hidden"]}
+            />
+            <path
+              id="mute-line"
+              d="M2 1L22 22.5"
+              class={["stroke-white", !@publisher.microphone_muted && "hidden"]}
+            />
+          </svg>
+        </button> --%>
+        <button
+          id="toggle-voice-chat"
+          class={[
+            "rounded-full p-4 w-fit self-end text-white inline-flex gap-2 items-center sm:block",
+            if(@publisher.enabled,
+              do: "bg-red-600 sm:hover:bg-red-600/90",
+              else: "bg-blue-600 sm:hover:bg-blue-600/90"
+            )
+          ]}
+          aria-label={"#{if(@publisher.enabled, do: "Leave", else: "Join")} voice chat"}
+        >
+          <p class={["sm:hidden", @publisher.enabled && "text-white"]}>
+            {if(@publisher.enabled, do: "Leave", else: "Join")} voice chat
+          </p>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class={["size-6 stroke-white", @publisher.enabled && "rotate-[135deg] translate-y-[2px]"]}
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"
+            />
+          </svg>
+        </button>
+      </div>
       <div id="audio-player-wrapper"></div>
     </div>
     """
@@ -161,6 +209,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
 
   @impl true
   def handle_info({:ex_webrtc, _, _}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_info(
+        {:packet, _params},
+        %{assigns: %{publisher: %__MODULE__{is_negotiating_setup?: true}}} = socket
+      ) do
     {:noreply, socket}
   end
 
@@ -379,6 +434,13 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
 
     {:noreply, assign(socket, :publisher, %{publisher | enabled: enabled})}
   end
+
+  # @impl true
+  # def handle_event("toggle-mute-microphone", %{"enabled" => enabled}, socket) do
+  #   %{publisher: publisher} = socket.assigns
+
+  #   {:noreply, assign(socket, :publisher, %{publisher | microphone_muted: !enabled})}
+  # end
 
   defp spawn_peer_connection(socket) do
     %{publisher: publisher} = socket.assigns

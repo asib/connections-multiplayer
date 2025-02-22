@@ -10,25 +10,69 @@ export function createVoiceChatHook(iceServers = []) {
             //     });
             // });
 
+            // this.muteMicrophoneButton = document.getElementById("mute-microphone");
+            // this.muteMicrophoneButton.addEventListener("click", async () => {
+            //     if (this.pc === undefined || this.microphoneSender?.track === undefined) {
+            //         return;
+            //     }
+
+            //     this.microphoneSender.track.enabled = !this.microphoneSender.track.enabled;
+            //     console.log(`${new Date().toISOString()}: microphone enabled: ${this.microphoneSender.track.enabled}`);
+
+            //     if (this.microphoneSender.track.enabled) {
+            //         this.muteMicrophoneButton.classList.remove("bg-red-800", "hover:bg-red-800/90");
+            //         this.muteMicrophoneButton.classList.add("bg-gray-200", "hover:bg-gray-200/80");
+
+            //         this.muteMicrophoneButton.querySelector("p").textContent = "Unmute microphone";
+            //         this.muteMicrophoneButton.querySelector("p").classList.remove("text-white");
+
+            //         this.muteMicrophoneButton.querySelector("#microphone").classList.add("stroke-black");
+            //         this.muteMicrophoneButton.querySelector("#microphone").classList.remove("stroke-white");
+
+            //         this.muteMicrophoneButton.querySelector("#mute-line-margin").classList.add("hidden");
+            //         this.muteMicrophoneButton.querySelector("#mute-line").classList.add("hidden");
+            //     } else {
+            //         this.muteMicrophoneButton.classList.remove("bg-gray-200", "hover:bg-gray-200/80");
+            //         this.muteMicrophoneButton.classList.add("bg-red-800", "hover:bg-red-800/90");
+
+            //         this.muteMicrophoneButton.querySelector("p").textContent = "Mute microphone";
+            //         this.muteMicrophoneButton.querySelector("p").classList.add("text-white");
+
+            //         this.muteMicrophoneButton.querySelector("#microphone").classList.add("stroke-white");
+            //         this.muteMicrophoneButton.querySelector("#microphone").classList.remove("stroke-black");
+
+            //         this.muteMicrophoneButton.querySelector("#mute-line-margin").classList.remove("hidden");
+            //         this.muteMicrophoneButton.querySelector("#mute-line").classList.remove("hidden");
+            //     }
+
+            //     this.pushEventTo(this.el, "toggle-mute-microphone", { enabled: this.microphoneSender.track.enabled });
+            // });
+
             this.toggleVoiceChatButton = document.getElementById("toggle-voice-chat");
             this.toggleVoiceChatButton.addEventListener("click", async () => {
                 if (this.pc === undefined) {
                     await this.startStreaming();
 
-                    this.el.dataset.streaming = "true";
-
-                    this.toggleVoiceChatButton.classList.remove("bg-blue-600", "hover:bg-blue-600/90");
-                    this.toggleVoiceChatButton.classList.add("bg-red-600", "hover:bg-red-600/90");
+                    this.toggleVoiceChatButton.classList.remove("bg-blue-600", "sm:hover:bg-blue-600/90");
+                    this.toggleVoiceChatButton.classList.add("bg-red-600", "sm:hover:bg-red-600/90");
                     this.toggleVoiceChatButton.querySelector("svg").classList.add("rotate-[135deg]", "translate-y-[2px]");
+                    this.toggleVoiceChatButton.querySelector("p").textContent = "Leave voice chat";
+
+                    // this.muteMicrophoneButton.classList.remove("hidden");
+                    // this.muteMicrophoneButton.classList.add("inline-flex", "gap-2", "items-center", "sm:block");
+
                     this.pushEventTo(this.el, "toggle-voice-chat", { enabled: true });
                 } else {
                     this.stopStreaming();
 
-                    this.el.dataset.streaming = "false";
-
-                    this.toggleVoiceChatButton.classList.remove("bg-red-600", "hover:bg-red-600/90");
-                    this.toggleVoiceChatButton.classList.add("bg-blue-600", "hover:bg-blue-600/90");
+                    this.toggleVoiceChatButton.classList.remove("bg-red-600", "sm:hover:bg-red-600/90");
+                    this.toggleVoiceChatButton.classList.add("bg-blue-600", "sm:hover:bg-blue-600/90");
                     this.toggleVoiceChatButton.querySelector("svg").classList.remove("rotate-[135deg]", "translate-y-[2px]");
+                    this.toggleVoiceChatButton.querySelector("p").textContent = "Join voice chat";
+
+                    // this.muteMicrophoneButton.classList.add("hidden");
+                    // this.muteMicrophoneButton.classList.remove("inline-flex", "gap-2", "items-center", "sm:block");
+
                     this.pushEventTo(this.el, "toggle-voice-chat", { enabled: false });
                 }
             });
@@ -117,8 +161,8 @@ export function createVoiceChatHook(iceServers = []) {
             }
 
             console.log(`${new Date().toISOString()}: Adding track to peer connection`);
-            // this.pc.addTrack(this.localStream.getAudioTracks()[0], this.localStream);
-            this.pc.addTrack(this.createSineWaveTrack());
+            this.microphoneSender = this.pc.addTrack(this.localStream.getAudioTracks()[0], this.localStream);
+            // this.microphoneSender = this.pc.addTrack(this.createSineWaveTrack());
 
             console.log(`${new Date().toISOString()}: Creating offer`);
             const offer = await this.pc.createOffer();

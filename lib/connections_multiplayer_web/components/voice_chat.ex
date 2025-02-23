@@ -207,15 +207,22 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_info({:ex_webrtc, _, _}, socket) do
+  def handle_info({:ex_webrtc, _pid, :negotiation_needed}, socket) do
+    Logger.info("#{__MODULE__} #{inspect(self())}: negotiation needed")
+    %{publisher: publisher} = socket.assigns
+
+    {:ok, offer} = PeerConnection.create_offer(publisher.pc)
+    PeerConnection.set_local_description(publisher.pc, offer)
+
+    socket =
+      socket
+      |> push_event("offer-#{publisher.id}", SessionDescription.to_json(offer))
+
     {:noreply, socket}
   end
 
-  def handle_info(
-        {:packet, _params},
-        %{assigns: %{publisher: %__MODULE__{is_negotiating_setup?: true}}} = socket
-      ) do
+  @impl true
+  def handle_info({:ex_webrtc, _, _}, socket) do
     {:noreply, socket}
   end
 
@@ -225,15 +232,18 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
       ) do
     %{publisher: publisher} = socket.assigns
 
-    if publisher.id != publisher_id do
-      case publisher.publisher_to_audio_track_id[publisher_pid] do
-        nil ->
-          Logger.error(
-            "#{__MODULE__} #{inspect(self())}: received audio packet from #{inspect(publisher_pid)} but no audio track id found: #{inspect(publisher.publisher_to_audio_track_id)}, #{inspect(publisher.pending_publisher_pids)}"
-          )
+    if !publisher.is_negotiating_setup? &&
+         PeerConnection.get_connection_state(publisher.pc) == :connected do
+      if publisher.id != publisher_id do
+        case publisher.publisher_to_audio_track_id[publisher_pid] do
+          nil ->
+            Logger.error(
+              "#{__MODULE__} #{inspect(self())}: received audio packet from #{inspect(publisher_pid)} but no audio track id found: #{inspect(publisher.publisher_to_audio_track_id)}, #{inspect(publisher.pending_publisher_pids)}"
+            )
 
-        audio_track_id ->
-          PeerConnection.send_rtp(publisher.pc, audio_track_id, packet)
+          audio_track_id ->
+            PeerConnection.send_rtp(publisher.pc, audio_track_id, packet)
+        end
       end
     end
 
@@ -281,9 +291,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
           Map.put(publisher.publisher_to_audio_track_id, publisher_pid, audio_track_id)
     }
 
-    {:noreply,
-     assign(socket, :publisher, new_publisher)
-     |> push_event("offer-#{publisher.id}", SessionDescription.to_json(offer))}
+    {:noreply, assign(socket, :publisher, new_publisher)}
   end
 
   @impl true
@@ -320,6 +328,16 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
   end
 
   @impl true
+  def handle_info({:DOWN, _ref, :process, _pid, {:shutdown, :conn_state_failed}}, socket) do
+    {:noreply, push_event(socket, "solicit-reoffer-#{socket.assigns.publisher.id}", %{})}
+  end
+
+  @impl true
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("offer", unsigned_params, socket) do
     %{publisher: publisher} = socket.assigns
     offer = SessionDescription.from_json(unsigned_params)
@@ -329,7 +347,7 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
     [%{kind: :audio, receiver: %{track: audio_track}}] = PeerConnection.get_transceivers(pc)
 
     {:ok, publishers} = VoiceChatMux.get_publishers_for_game(socket.assigns.room_id)
-    publisher_to_audio_track_id = Map.new(publishers, &{&1, add_new_audio_track(pc)})
+    publishers = MapSet.to_list(publishers)
 
     {:ok, answer} = PeerConnection.create_answer(pc)
     :ok = PeerConnection.set_local_description(pc, answer)
@@ -340,8 +358,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
       publisher
       | pc: pc,
         audio_track_id: audio_track.id,
-        publisher_to_audio_track_id: publisher_to_audio_track_id,
-        is_negotiating_setup?: true
+        is_negotiating_setup?: true,
+        publisher_to_audio_track_id: %{},
+        pending_publisher_pids: [publisher.pending_publisher_pids | publishers]
     }
 
     :ok = VoiceChatMux.add_publisher_to_game(socket.assigns.room_id, pc)
@@ -454,7 +473,9 @@ defmodule ConnectionsMultiplayerWeb.VoiceChat do
       ]
       |> Enum.reject(fn {_k, v} -> v == nil end)
 
-    PeerConnection.start_link(pc_opts, publisher.pc_genserver_opts)
+    {:ok, pc} = PeerConnection.start(pc_opts, publisher.pc_genserver_opts)
+    Process.monitor(pc)
+    {:ok, pc}
   end
 
   defp gather_candidates(pc) do

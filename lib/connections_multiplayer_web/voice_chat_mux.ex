@@ -59,6 +59,8 @@ defmodule ConnectionsMultiplayerWeb.VoiceChatMux do
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     %{game_id: game_id, type: :publishers} = Map.get(state.peers, pid)
 
+    Logger.info("VoiceChatMux: publisher #{inspect(pid)} for game #{game_id} went down")
+
     new_state =
       update_in(state, [:publishers, Access.key(game_id, MapSet.new())], &MapSet.delete(&1, pid))
       |> then(fn state -> update_in(state.peers, &Map.delete(&1, pid)) end)

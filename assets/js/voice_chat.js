@@ -107,6 +107,11 @@ export function createVoiceChatHook(iceServers = []) {
                     console.warn(`${new Date().toISOString()}: Received ICE candidate but there is no PC. Ignoring.`);
                 }
             });
+
+            this.handleEvent(`solicit-reoffer-${this.el.id}`, async () => {
+                console.log(`${new Date().toISOString()}: Received solicit reoffer event, creating and sending new offer`);
+                await this.createAndSendOffer();
+            })
         },
 
         async startStreaming() {
@@ -144,16 +149,21 @@ export function createVoiceChatHook(iceServers = []) {
                 console.log(`${new Date().toISOString()}: received track, creating audio element`);
 
                 const trackId = event.track.id;
+                const audioPlayerElementId = `audio-${trackId}`
                 const audioPlayer = document.createElement('audio');
                 audioPlayer.srcObject = event.streams[0];
                 audioPlayer.autoplay = true;
                 audioPlayer.muted = false;
+                audioPlayer.id = audioPlayerElementId;
 
                 this.audioPlayerWrapper.appendChild(audioPlayer);
 
-                event.track.onended = (_) => {
+                event.track.onended = (e) => {
                     console.log(`${new Date().toISOString()}: track ended: ${trackId}`);
-                    this.audioPlayerWrapper.removeChild(audioPlayer);
+                    const audioElement = document.getElementById(audioPlayerElementId);
+                    if (audioElement !== null) {
+                        this.audioPlayerWrapper.removeChild(audioElement);
+                    }
                     this.pc?.getSenders().filter((sender) => sender.track?.id === trackId).forEach((sender) => {
                         this.pc.removeTrack(sender);
                     })
@@ -164,13 +174,7 @@ export function createVoiceChatHook(iceServers = []) {
             this.microphoneSender = this.pc.addTrack(this.localStream.getAudioTracks()[0], this.localStream);
             // this.microphoneSender = this.pc.addTrack(this.createSineWaveTrack());
 
-            console.log(`${new Date().toISOString()}: Creating offer`);
-            const offer = await this.pc.createOffer();
-            console.log(`${new Date().toISOString()}: Setting local description`);
-            await this.pc.setLocalDescription(offer);
-
-            console.log(`${new Date().toISOString()}: Sending offer`);
-            this.pushEventTo(this.el, "offer", offer);
+            await this.createAndSendOffer();
         },
 
         stopStreaming() {
@@ -186,6 +190,16 @@ export function createVoiceChatHook(iceServers = []) {
                 this.localStream.getTracks().forEach((track) => track.stop());
                 this.localStream = undefined;
             }
+        },
+
+        async createAndSendOffer() {
+            console.log(`${new Date().toISOString()}: Creating offer`);
+            const offer = await this.pc.createOffer();
+            console.log(`${new Date().toISOString()}: Setting local description`);
+            await this.pc.setLocalDescription(offer);
+
+            console.log(`${new Date().toISOString()}: Sending offer`);
+            this.pushEventTo(this.el, "offer", offer);
         },
 
         createSineWaveTrack(frequency = 196) { // in Hz
